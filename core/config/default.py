@@ -16,6 +16,9 @@ DEFAULT_CONFIG = {
             "path": None
         }
     },
+    "framework": {
+        "developer_mode": False
+    },
     "providers": {},  # ID: Provider config dict
     "models": {
         "default_llm": None,  # Provider ID - Model ID

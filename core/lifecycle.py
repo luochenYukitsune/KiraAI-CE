@@ -2,7 +2,7 @@ import asyncio
 import time
 from typing import Optional
 
-from .logging_manager import get_logger
+from .logging_manager import get_logger, set_developer_mode
 from .config import KiraConfig
 from .sticker_manager import StickerManager
 from .message_manager import MessageProcessor
@@ -80,6 +80,12 @@ class KiraLifecycle:
 
         # ====== init KiraAI config ======
         self.kira_config = KiraConfig()
+
+        # ====== apply developer mode from config ======
+        developer_mode = self.kira_config.get("framework", {}).get("developer_mode", False)
+        set_developer_mode(developer_mode)
+        if developer_mode:
+            logger.debug("Developer mode enabled from configuration")
 
         # ====== init ProviderManager config ======
         self.provider_manager = ProviderManager(self.kira_config)

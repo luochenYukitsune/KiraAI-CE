@@ -2,7 +2,7 @@ from typing import Dict
 
 from fastapi import Depends, HTTPException
 
-from core.logging_manager import get_logger
+from core.logging_manager import get_logger, set_developer_mode, is_developer_mode
 from webui.routes.auth import require_auth
 from webui.routes.base import RouteDefinition, Routes
 
@@ -34,6 +34,7 @@ class ConfigRoutes(Routes):
         config = self.lifecycle.kira_config
         bot_config = config.get("bot_config", {})
         models = config.get("models", {})
+        framework = config.get("framework", {})
         providers_config = config.get("providers", {}) or {}
         providers = []
         provider_models: Dict[str, Dict] = {}
@@ -59,6 +60,7 @@ class ConfigRoutes(Routes):
             "configuration": {
                 "bot_config": bot_config,
                 "models": models,
+                "framework": framework,
             },
             "providers": providers,
             "provider_models": provider_models,
@@ -70,12 +72,21 @@ class ConfigRoutes(Routes):
         config = self.lifecycle.kira_config
         bot_config = payload.get("bot_config")
         models = payload.get("models")
+        framework = payload.get("framework")
         updated = False
         if isinstance(bot_config, dict):
             config["bot_config"] = bot_config
             updated = True
         if isinstance(models, dict):
             config["models"] = models
+            updated = True
+        if isinstance(framework, dict):
+            old_developer_mode = config.get("framework", {}).get("developer_mode", False)
+            new_developer_mode = framework.get("developer_mode", False)
+            config["framework"] = framework
+            if old_developer_mode != new_developer_mode:
+                set_developer_mode(new_developer_mode)
+                logger.info(f"Developer mode changed to: {new_developer_mode}")
             updated = True
         if updated:
             config.save_config()
@@ -85,5 +96,6 @@ class ConfigRoutes(Routes):
             "configuration": {
                 "bot_config": config.get("bot_config", {}),
                 "models": config.get("models", {}),
+                "framework": config.get("framework", {}),
             },
         }

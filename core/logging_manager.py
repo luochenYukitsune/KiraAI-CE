@@ -16,6 +16,27 @@ logger_color_mapping = {}
 
 MAX_QUEUE_SIZE = 100
 
+_developer_mode = False
+
+_console_handlers = {}
+
+
+def set_developer_mode(enabled: bool):
+    """Set developer mode to control log level"""
+    global _developer_mode
+    _developer_mode = enabled
+    level = logging.DEBUG if enabled else logging.INFO
+    for name, handler in _console_handlers.items():
+        handler.setLevel(level)
+    logger = logging.getLogger("logging_manager")
+    if logger.handlers:
+        logger.info(f"Developer mode {'enabled' if enabled else 'disabled'}, console log level set to {'DEBUG' if enabled else 'INFO'}")
+
+
+def is_developer_mode() -> bool:
+    """Check if developer mode is enabled"""
+    return _developer_mode
+
 
 class LogCacheManager:
     def __init__(self):
@@ -124,8 +145,9 @@ def get_logger(name: str, color: str):
     )
 
     ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
+    ch.setLevel(logging.DEBUG if _developer_mode else logging.INFO)
     ch.setFormatter(console_formatter)
+    _console_handlers[name] = ch
 
     fh = RotatingFileHandler(filename=f"{get_data_path()}/log.log", maxBytes=10*1024*1024, backupCount=1, encoding='utf-8')
     fh.setLevel(logging.DEBUG)

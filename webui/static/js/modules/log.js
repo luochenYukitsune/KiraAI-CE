@@ -54,12 +54,22 @@ async function loadLogsData() {
     }
 }
 
+function isDeveloperMode() {
+    if (window.configManager && window.configManager.currentData) {
+        return window.configManager._getNestedValue(window.configManager.currentData, 'framework.developer_mode') || false;
+    }
+    return false;
+}
+
 /**
  * Initialize log level selector event listener
  */
 function initLogLevelSelector() {
     const selector = document.getElementById('log-level-selector');
     if (selector) {
+        // Update DEBUG option visibility based on developer mode
+        updateDebugOptionVisibility(selector);
+
         // Set initial value from state
         selector.value = AppState.data.logFilter.level || 'all';
 
@@ -69,6 +79,21 @@ function initLogLevelSelector() {
             AppState.data.logFilter.level = selectedLevel;
             applyLogFilter();
         });
+    }
+}
+
+/**
+ * Update DEBUG option visibility based on developer mode
+ */
+function updateDebugOptionVisibility(selector) {
+    const debugOption = selector.querySelector('option[value="debug"]');
+    if (debugOption) {
+        debugOption.style.display = isDeveloperMode() ? 'block' : 'none';
+        // If currently selected DEBUG but developer mode is off, reset to all
+        if (selector.value === 'debug' && !isDeveloperMode()) {
+            selector.value = 'all';
+            AppState.data.logFilter.level = 'all';
+        }
     }
 }
 
@@ -173,6 +198,11 @@ function addLogEntry(log) {
     const name = log.name || '';
     const message = log.message || log.content || '';
     const color = log.color || 'blue';
+
+    // Filter DEBUG logs when developer mode is disabled
+    if (level === 'DEBUG' && !isDeveloperMode()) {
+        return;
+    }
 
     // Apply log level filter
     const currentFilter = AppState.data.logFilter.level;
