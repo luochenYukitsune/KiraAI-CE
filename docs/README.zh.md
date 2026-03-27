@@ -96,6 +96,3 @@ KiraAI/
 ## 🐞 故障排查
 - 查看WebUI系统日志选项卡种的报错信息
 
-## ✨ Star History
-[![Star History Chart](https://api.star-history.com/svg?repos=xxynet/KiraAI&type=date&legend=top-left)](https://www.star-history.com/#xxynet/KiraAI&type=date&legend=top-left)
-
