@@ -10,32 +10,11 @@ from core.utils.path_utils import get_data_path
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-escape_codes['orange'] = '\033[38;5;208m'  # 208 是接近橙色的 ANSI 256 色编号
+escape_codes['orange'] = '\033[38;5;208m'
 
 logger_color_mapping = {}
 
 MAX_QUEUE_SIZE = 100
-
-_developer_mode = False
-
-_console_handlers = {}
-
-
-def set_developer_mode(enabled: bool):
-    """Set developer mode to control log level"""
-    global _developer_mode
-    _developer_mode = enabled
-    level = logging.DEBUG if enabled else logging.INFO
-    for name, handler in _console_handlers.items():
-        handler.setLevel(level)
-    logger = logging.getLogger("logging_manager")
-    if logger.handlers:
-        logger.info(f"Developer mode {'enabled' if enabled else 'disabled'}, console log level set to {'DEBUG' if enabled else 'INFO'}")
-
-
-def is_developer_mode() -> bool:
-    """Check if developer mode is enabled"""
-    return _developer_mode
 
 
 class LogCacheManager:
@@ -52,11 +31,9 @@ class LogCacheManager:
         self.queues.remove(que)
 
     def get_cache(self) -> list:
-        """Get all logs from cache"""
         return list(self.log_cache)
 
     def emit(self, time, level, name, message, color):
-        # Add to cache
         self.log_cache.append({
             "time": time,
             "level": level,
@@ -65,7 +42,6 @@ class LogCacheManager:
             "color": color
         })
         
-        # Send to all queues
         for que in self.queues:
             try:
                 que.put_nowait({
@@ -112,6 +88,37 @@ class GetLoggerFilter(logging.Filter):
 _created_by_get_logger = set()
 
 
+_developer_mode_enabled = False
+
+
+def set_developer_mode(enabled: bool):
+    """Set developer mode to control log levels"""
+    global _developer_mode_enabled
+    _developer_mode_enabled = enabled
+    
+    level = logging.DEBUG if enabled else logging.INFO
+    
+    for name in _created_by_get_logger:
+        logger = logging.getLogger(name)
+        for handler in logger.handlers:
+            if isinstance(handler, logging.StreamHandler) and not isinstance(handler, LogQueueHandler):
+                if not isinstance(handler, RotatingFileHandler):
+                    handler.setLevel(level)
+    
+    logger_name = "logging_manager"
+    if logger_name in _created_by_get_logger:
+        logger = logging.getLogger(logger_name)
+        if enabled:
+            logger.debug("Developer mode enabled - DEBUG logs will be shown in console")
+        else:
+            logger.info("Developer mode disabled - Only INFO and above logs will be shown in console")
+
+
+def is_developer_mode() -> bool:
+    """Check if developer mode is enabled"""
+    return _developer_mode_enabled
+
+
 def get_logger(name: str, color: str):
     logger = logging.getLogger(name)
 
@@ -145,9 +152,8 @@ def get_logger(name: str, color: str):
     )
 
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG if _developer_mode else logging.INFO)
+    ch.setLevel(logging.DEBUG)
     ch.setFormatter(console_formatter)
-    _console_handlers[name] = ch
 
     fh = RotatingFileHandler(filename=f"{get_data_path()}/log.log", maxBytes=10*1024*1024, backupCount=1, encoding='utf-8')
     fh.setLevel(logging.DEBUG)

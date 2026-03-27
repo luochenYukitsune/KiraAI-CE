@@ -223,8 +223,6 @@ window._locale_zh = {
             agent_desc: "代理和工具执行参数",
             selfie: "外观",
             selfie_desc: "机器人外观参考设置",
-            framework: "框架设置",
-            framework_desc: "高级框架配置选项",
             models: "默认模型",
             models_desc: "为每种能力选择默认提供商和模型"
         },
@@ -235,11 +233,7 @@ window._locale_zh = {
             min_message_delay: "发送回复前的最小延迟秒数",
             max_message_delay: "发送回复前的最大延迟秒数",
             max_tool_loop: "每次响应的最大工具调用迭代次数",
-            selfie_path: "机器人外观参考图片路径",
-            developer_mode: "启用详细的工作流程日志。除非你知道你在做什么，不然不要打开它。"
-        },
-        framework: {
-            developer_mode: "开发者模式"
+            selfie_path: "机器人外观参考图片路径"
         },
         validation: {
             required: "此字段为必填项",
@@ -341,7 +335,6 @@ window._locale_zh = {
         clear: "清除日志",
         refresh: "刷新",
         level_all: "所有级别",
-        level_debug: "调试",
         level_info: "信息",
         level_warning: "警告",
         level_error: "错误",

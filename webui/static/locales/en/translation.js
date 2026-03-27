@@ -223,8 +223,6 @@ window._locale_en = {
             agent_desc: "Agent and tool execution parameters",
             selfie: "Appearance",
             selfie_desc: "Bot appearance reference settings",
-            framework: "Framework Settings",
-            framework_desc: "Advanced framework configuration options",
             models: "Default Models",
             models_desc: "Select default provider and model for each capability"
         },
@@ -235,11 +233,7 @@ window._locale_en = {
             min_message_delay: "Minimum delay in seconds before sending a reply",
             max_message_delay: "Maximum delay in seconds before sending a reply",
             max_tool_loop: "Maximum number of tool call iterations per response",
-            selfie_path: "Path to the bot appearance reference image",
-            developer_mode: "Enable detailed workflow logs. Unless you know what you are doing, do not enable this."
-        },
-        framework: {
-            developer_mode: "Developer Mode"
+            selfie_path: "Path to the bot appearance reference image"
         },
         validation: {
             required: "This field is required",
@@ -341,7 +335,6 @@ window._locale_en = {
         clear: "Clear Logs",
         refresh: "Refresh",
         level_all: "All Levels",
-        level_debug: "Debug",
         level_info: "Info",
         level_warning: "Warning",
         level_error: "Error",
