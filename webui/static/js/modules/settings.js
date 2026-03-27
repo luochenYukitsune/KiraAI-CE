@@ -90,20 +90,39 @@ async function loadSettingsData() {
     try {
         const response = await apiCall('/api/settings');
         const data = await response.json();
-        AppState.data.settings = data.settings || {};
+        AppState.data.settings = data;
 
         const languageSelect = document.getElementById('settings-language');
         const themeSelect = document.getElementById('settings-theme');
 
-        if (languageSelect && data.settings.language) {
-            languageSelect.value = data.settings.language;
+        const currentLanguage = window.i18n && typeof window.i18n.t === 'function' ? 
+            (window.i18next && window.i18next.language) || 'en' : 'en';
+
+        if (languageSelect) {
+            languageSelect.value = data.language || currentLanguage;
+            
+            languageSelect.onchange = function(e) {
+                if (window.i18n && typeof window.i18n.changeLanguage === 'function') {
+                    window.i18n.changeLanguage(e.target.value).catch((error) => {
+                        console.error('Failed to change language:', error);
+                    });
+                } else if (window.i18next) {
+                    window.i18next.changeLanguage(e.target.value).then(() => {
+                        if (typeof window.updateTranslations === 'function') {
+                            window.updateTranslations();
+                        }
+                    }).catch((error) => {
+                        console.error('Failed to change language:', error);
+                    });
+                }
+            };
         }
 
-        if (themeSelect && data.settings.theme) {
-            themeSelect.value = data.settings.theme;
+        if (themeSelect) {
+            themeSelect.value = data.theme || 'light';
         }
 
-        applyTheme(data.settings.theme || 'light');
+        applyTheme(data.theme || 'light');
 
     } catch (error) {
         console.error('Error loading settings data:', error);
@@ -116,13 +135,13 @@ async function saveSettings() {
         const theme = document.getElementById('settings-theme')?.value;
 
         const response = await apiCall('/api/settings', {
-            method: 'POST',
+            method: 'PUT',
             body: JSON.stringify({ language, theme })
         });
 
         const data = await response.json();
 
-        if (data.status === 'ok') {
+        if (data.updated_by) {
             showNotification(window.i18n ? window.i18n.t('settings.saved') : 'Settings saved successfully', 'success');
             applyTheme(theme);
         } else {

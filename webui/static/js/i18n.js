@@ -133,3 +133,5 @@ window.i18n = {
         }
     })
 };
+
+window.updateTranslations = updateTranslations;

@@ -82,8 +82,10 @@ class EventBus:
     async def _dispatch_event(self, event):
         async with self.message_processing_semaphore:
             if isinstance(event, KiraMessageEvent):
+                self.logger.debug(f"[EventBus] Dispatching KiraMessageEvent from session: {event.session.sid}")
                 await self.message_processor.handle_im_message(event)
             elif isinstance(event, KiraCommentEvent):
+                self.logger.debug(f"[EventBus] Dispatching KiraCommentEvent from adapter: {event.adapter_name}")
                 await self.message_processor.handle_cmt_message(event)
 
     def subscribe(self, event_type: EventType, handler: Callable):
@@ -103,6 +105,7 @@ class EventBus:
 
     async def publish(self, event):
         """publish an event"""
+        self.logger.debug(f"[EventBus] Publishing event: {type(event).__name__}")
         await self.event_queue.put(event)
         # try:
         #     # 通过中间件处理
@@ -157,12 +160,14 @@ class EventBus:
     async def dispatch(self):
         """start event bus"""
         self._running_event.set()
+        self.logger.debug("[EventBus] Event dispatch loop started")
 
         while self._running_event.is_set():
             event: Union[KiraMessageEvent, KiraCommentEvent] = await self.event_queue.get()
             if isinstance(event, (KiraMessageEvent, KiraCommentEvent)):
                 self.total_messages_stats["total_messages"] += 1
                 self.stats.set_stats("messages", self.total_messages_stats)
+                self.logger.debug(f"[EventBus] Received event #{self.total_messages_stats['total_messages']}: {type(event).__name__}")
             task = asyncio.create_task(self._dispatch_event(event))
 
             def _log_task_error(t: asyncio.Task):

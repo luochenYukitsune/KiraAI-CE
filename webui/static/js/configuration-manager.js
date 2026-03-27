@@ -126,6 +126,25 @@ class ConfigurationManager {
                 ]
             },
             {
+                id: 'framework',
+                labelKey: 'configuration.groups.framework',
+                labelFallback: 'Framework Settings',
+                descKey: 'configuration.groups.framework_desc',
+                descFallback: 'Advanced framework configuration options',
+                icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>`,
+                fields: [
+                    {
+                        key: 'bot_config.framework.developer_mode',
+                        labelKey: 'configuration.message.developer_mode',
+                        labelFallback: 'Developer Mode',
+                        hintKey: 'configuration.hints.developer_mode',
+                        hintFallback: 'Unless you know what you are doing, do not enable this',
+                        type: 'switch',
+                        default: false
+                    }
+                ]
+            },
+            {
                 id: 'models',
                 labelKey: 'configuration.groups.models',
                 labelFallback: 'Default Models',

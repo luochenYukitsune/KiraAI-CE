@@ -95,15 +95,21 @@ class AgentExecutor:
         provider_name = llm_model.model.provider_name
         model_id = llm_model.model.model_id
         llm_logger.info(f"Running agent using {model_id} ({provider_name})")
+        logger.debug(f"[AgentExecutor] === Agent Execution START ===")
+        logger.debug(f"[AgentExecutor] Model: {model_id}, Provider: {provider_name}")
+        logger.debug(f"[AgentExecutor] Max steps: {max_steps}")
 
         for step_index in range(max_steps):
+            logger.debug(f"[AgentExecutor] --- Step {step_index + 1}/{max_steps} ---")
+            logger.debug(f"[AgentExecutor] Calling LLM chat...")
             llm_resp = await llm_model.chat(request)
 
             if not llm_resp:
+                logger.debug(f"[AgentExecutor] LLM returned empty response")
                 # Add reasoning_content
                 request.messages.append({"role": "assistant", "content": "", "reasoning_content": ""})
                 ctx.new_memory.assistant("", reasoning_content="")
-                yield AgentStepResult(
+                step_result = AgentStepResult(
                     state="error",
                     err="Failed to call LLM",
                     step_index=step_index,
@@ -112,20 +118,28 @@ class AgentExecutor:
                     is_final=True,
                     has_tool_calls=False,
                 )
+                logger.debug(f"[AgentExecutor] AgentStepResult: step={step_result.step_index}, state={step_result.state}, has_tool_calls={step_result.has_tool_calls}, is_final={step_result.is_final}, err={step_result.err}")
+                yield step_result
                 return
 
             llm_resp.agent_step_index = step_index
-            llm_logger.debug(llm_resp)
             llm_logger.info(
                 f"Time consumed: {llm_resp.time_consumed}s, Input tokens: {llm_resp.input_tokens}, output tokens: {llm_resp.output_tokens}"
             )
 
+            if llm_resp.text_response:
+                logger.debug(f"[AgentExecutor] LLM text response: {llm_resp.text_response[:200]}{'...' if len(llm_resp.text_response) > 200 else ''}")
+            
+            if llm_resp.reasoning_content:
+                logger.debug(f"[AgentExecutor] Reasoning content length: {len(llm_resp.reasoning_content)}")
+
             llm_resp_handlers = event_handler_reg.get_handlers(event_type=EventType.ON_LLM_RESPONSE)
             for handler in llm_resp_handlers:
+                logger.debug(f"[AgentExecutor] Executing ON_LLM_RESPONSE handler: {handler.desc or handler.handler.__name__}")
                 await handler.exec_handler(event, llm_resp)
                 if event.is_stopped:
                     logger.info("Event stopped")
-                    yield AgentStepResult(
+                    step_result = AgentStepResult(
                         state="stopped",
                         step_index=step_index,
                         llm_response=llm_resp,
@@ -133,11 +147,14 @@ class AgentExecutor:
                         is_final=True,
                         has_tool_calls=bool(llm_resp.tool_calls),
                     )
+                    logger.debug(f"[AgentExecutor] AgentStepResult: step={step_result.step_index}, state={step_result.state}, has_tool_calls={step_result.has_tool_calls}, is_final={step_result.is_final}")
+                    yield step_result
                     return
 
             has_tool_calls = bool(llm_resp.tool_calls)
 
             if not has_tool_calls:
+                logger.debug(f"[AgentExecutor] No tool calls, finalizing response...")
                 assistant_content = llm_resp.text_response or ""
                 reasoning = llm_resp.reasoning_content or ""
                 # Add reasoning_content
@@ -149,7 +166,8 @@ class AgentExecutor:
                     }
                 )
                 ctx.new_memory.assistant(assistant_content, reasoning_content=reasoning)
-                yield AgentStepResult(
+                logger.debug(f"[AgentExecutor] === Agent Execution END (no tool calls) ===")
+                step_result = AgentStepResult(
                     state="success",
                     step_index=step_index,
                     llm_response=llm_resp,
@@ -157,7 +175,14 @@ class AgentExecutor:
                     is_final=True,
                     has_tool_calls=False,
                 )
+                logger.debug(f"[AgentExecutor] AgentStepResult: step={step_result.step_index}, state={step_result.state}, has_tool_calls={step_result.has_tool_calls}, is_final={step_result.is_final}")
+                yield step_result
                 return
+
+            logger.debug(f"[AgentExecutor] Tool calls detected: {len(llm_resp.tool_calls)}")
+            for i, tc in enumerate(llm_resp.tool_calls):
+                tool_name = tc.get("function", {}).get("name", "unknown")
+                logger.debug(f"[AgentExecutor]   -> Tool call {i+1}: {tool_name}")
 
             assistant_content = llm_resp.text_response or ""
             reasoning = llm_resp.reasoning_content or ""
@@ -177,7 +202,9 @@ class AgentExecutor:
             ctx.new_memory.tool(llm_resp.tool_results)
 
             is_final = step_index == max_steps - 1
-            yield AgentStepResult(
+            if is_final:
+                logger.debug(f"[AgentExecutor] === Agent Execution END (max steps reached) ===")
+            step_result = AgentStepResult(
                 state="success",
                 step_index=step_index,
                 llm_response=llm_resp,
@@ -185,5 +212,7 @@ class AgentExecutor:
                 is_final=is_final,
                 has_tool_calls=True,
             )
+            logger.debug(f"[AgentExecutor] AgentStepResult: step={step_result.step_index}, state={step_result.state}, has_tool_calls={step_result.has_tool_calls}, is_final={step_result.is_final}")
+            yield step_result
             if is_final:
                 return

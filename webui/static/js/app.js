@@ -214,16 +214,6 @@ function setupEventListeners() {
         saveSettingsBtn.addEventListener('click', saveSettings);
     }
 
-    // Settings language change
-    const settingsLanguage = document.getElementById('settings-language');
-    if (settingsLanguage) {
-        settingsLanguage.addEventListener('change', (e) => {
-            if (window.i18n) {
-                window.i18n.changeLanguage(e.target.value);
-            }
-        });
-    }
-
     // Settings theme change
     const settingsTheme = document.getElementById('settings-theme');
     if (settingsTheme) {

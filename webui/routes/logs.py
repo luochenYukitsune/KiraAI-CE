@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import Depends, Header, HTTPException
 from fastapi.responses import StreamingResponse
 
-from core.logging_manager import get_logger, log_cache_manager
+from core.logging_manager import get_logger, log_cache_manager, is_developer_mode
 from webui.routes.auth import require_auth
 from webui.routes.base import RouteDefinition, Routes
 from webui.utils import _verify_jwt_token
@@ -32,6 +32,13 @@ class LogsRoutes(Routes):
                 path="/api/log-config",
                 methods=["GET"],
                 endpoint=self.get_log_config,
+                tags=["logs"],
+                dependencies=[Depends(require_auth)],
+            ),
+            RouteDefinition(
+                path="/api/developer-mode",
+                methods=["GET"],
+                endpoint=self.get_developer_mode,
                 tags=["logs"],
                 dependencies=[Depends(require_auth)],
             ),
@@ -110,3 +117,11 @@ class LogsRoutes(Routes):
         except Exception as e:
             logger.error(f"Error reading log config: {e}")
             return {"maxQueueSize": 100}
+
+    async def get_developer_mode(self):
+        """Get current developer mode status."""
+        try:
+            return {"developerMode": is_developer_mode()}
+        except Exception as e:
+            logger.error(f"Error getting developer mode: {e}")
+            return {"developerMode": False}

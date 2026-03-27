@@ -14,11 +14,14 @@ DEFAULT_CONFIG = {
         },
         "selfie": {
             "path": None
+        },
+        "framework": {
+            "developer_mode": False
         }
     },
-    "providers": {},  # ID: Provider config dict
+    "providers": {},
     "models": {
-        "default_llm": None,  # Provider ID - Model ID
+        "default_llm": None,
         "default_fast_llm": None,
         "default_vlm": None,
         "default_tts": None,
@@ -28,5 +31,5 @@ DEFAULT_CONFIG = {
         "default_rerank": None,
         "default_video": None
     },
-    "adapters": {}  # ID: Adapter config dict
+    "adapters": {}
 }

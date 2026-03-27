@@ -33,6 +33,20 @@ class CustomSelect {
         this.init();
     }
 
+    static getInstance(element) {
+        if (!window._customSelectInstances) {
+            window._customSelectInstances = new WeakMap();
+        }
+        return window._customSelectInstances.get(element);
+    }
+
+    static _registerInstance(element, instance) {
+        if (!window._customSelectInstances) {
+            window._customSelectInstances = new WeakMap();
+        }
+        window._customSelectInstances.set(element, instance);
+    }
+
     init() {
         // Get options from the original select element
         this.parseOriginalOptions();
@@ -48,6 +62,9 @@ class CustomSelect {
 
         // Set initial value
         this.setValue(this.element.value);
+
+        // Register this instance
+        CustomSelect._registerInstance(this.element, this);
     }
 
     parseOriginalOptions() {
@@ -525,19 +542,32 @@ class CustomSelect {
 
 // Initialize all custom selects when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    CustomSelect.initializeAll();
+});
+
+/**
+ * Initialize all custom selects in the DOM
+ */
+CustomSelect.initializeAll = function() {
     const selects = document.querySelectorAll('select[data-custom-select]');
     selects.forEach(select => {
-        const options = {
-            placeholder: select.getAttribute('data-placeholder') || 'Select an option...',
-            searchable: select.getAttribute('data-searchable') === 'true',
-            multiple: select.getAttribute('data-multiple') === 'true',
-            disabled: select.disabled,
-            maxHeight: parseInt(select.getAttribute('data-max-height')) || 300
-        };
+        // Check if already initialized
+        if (!CustomSelect.getInstance(select)) {
+            const options = {
+                placeholder: select.getAttribute('data-placeholder') || 'Select an option...',
+                searchable: select.getAttribute('data-searchable') === 'true',
+                multiple: select.getAttribute('data-multiple') === 'true',
+                disabled: select.disabled,
+                maxHeight: parseInt(select.getAttribute('data-max-height')) || 300
+            };
 
-        new CustomSelect(select, options);
+            new CustomSelect(select, options);
+        }
     });
-});
+};
+
+// Expose CustomSelect globally
+window.CustomSelect = CustomSelect;
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {

@@ -1,6 +1,6 @@
 window._locale_en = {
     app: {
-        title: "KiraAI",
+        title: "KiraAI-CE",
         subtitle: "Admin Panel"
     },
     header: {
@@ -223,6 +223,8 @@ window._locale_en = {
             agent_desc: "Agent and tool execution parameters",
             selfie: "Appearance",
             selfie_desc: "Bot appearance reference settings",
+            framework: "Framework Settings",
+            framework_desc: "Advanced framework configuration options",
             models: "Default Models",
             models_desc: "Select default provider and model for each capability"
         },
@@ -233,7 +235,8 @@ window._locale_en = {
             min_message_delay: "Minimum delay in seconds before sending a reply",
             max_message_delay: "Maximum delay in seconds before sending a reply",
             max_tool_loop: "Maximum number of tool call iterations per response",
-            selfie_path: "Path to the bot appearance reference image"
+            selfie_path: "Path to the bot appearance reference image",
+            developer_mode: "Unless you know what you are doing, do not enable this"
         },
         validation: {
             required: "This field is required",
@@ -275,7 +278,8 @@ window._locale_en = {
             agent_section: "Agent Settings",
             max_tool_loop: "Max Tool Loop",
             selfie_section: "Selfie",
-            selfie_path: "Selfie Path"
+            selfie_path: "Selfie Path",
+            developer_mode: "Developer Mode"
         },
         model: {
             section_title: "Default Models",
@@ -339,7 +343,8 @@ window._locale_en = {
         level_warning: "Warning",
         level_error: "Error",
         search_placeholder: "Search logs...",
-        no_logs: "No logs available"
+        no_logs: "No logs available",
+        auto_scroll: "Auto-scroll to bottom"
     },
     settings: {
         title: "System Settings",

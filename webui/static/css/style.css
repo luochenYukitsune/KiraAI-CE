@@ -344,6 +344,8 @@ tbody tr:hover {
     background-color: #f9fafb !important;
     color: #1f2937;
     border: 1px solid #6b7280;
+    border-bottom: none;
+    overflow-y: auto;
 }
 
 /* Log entry styling for better readability */

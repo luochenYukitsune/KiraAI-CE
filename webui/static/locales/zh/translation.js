@@ -1,6 +1,6 @@
 window._locale_zh = {
     app: {
-        title: "KiraAI",
+        title: "KiraAI-CE",
         subtitle: "管理面板"
     },
     header: {
@@ -223,6 +223,8 @@ window._locale_zh = {
             agent_desc: "代理和工具执行参数",
             selfie: "外观",
             selfie_desc: "机器人外观参考设置",
+            framework: "框架设置",
+            framework_desc: "高级框架配置选项",
             models: "默认模型",
             models_desc: "为每种能力选择默认提供商和模型"
         },
@@ -233,7 +235,8 @@ window._locale_zh = {
             min_message_delay: "发送回复前的最小延迟秒数",
             max_message_delay: "发送回复前的最大延迟秒数",
             max_tool_loop: "每次响应的最大工具调用迭代次数",
-            selfie_path: "机器人外观参考图片路径"
+            selfie_path: "机器人外观参考图片路径",
+            developer_mode: "除非你知道你在干什么，不然不要打开它"
         },
         validation: {
             required: "此字段为必填项",
@@ -275,7 +278,8 @@ window._locale_zh = {
             agent_section: "代理设置",
             max_tool_loop: "最大工具循环次数",
             selfie_section: "形象",
-            selfie_path: "形象参考图路径"
+            selfie_path: "形象参考图路径",
+            developer_mode: "开发者模式"
         },
         model: {
             section_title: "默认模型",
@@ -339,7 +343,8 @@ window._locale_zh = {
         level_warning: "警告",
         level_error: "错误",
         search_placeholder: "搜索日志...",
-        no_logs: "无可用日志"
+        no_logs: "无可用日志",
+        auto_scroll: "自动滚动到底部"
     },
     settings: {
         title: "系统设置",

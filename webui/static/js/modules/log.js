@@ -4,8 +4,102 @@
  * Global dependencies: escapeHtml, updateTranslations（still in app.js）
  */
 
+let developerModeEnabled = false;
+
+// Resizable log container variables
+let isDragging = false;
+let startY = 0;
+let startHeight = 0;
+const MIN_LOG_HEIGHT = 200;
+const DEFAULT_LOG_HEIGHT = 384;
+
+// Auto-scroll setting
+let autoScrollEnabled = true;
+
+function initAutoScrollToggle() {
+    const toggle = document.getElementById('auto-scroll-toggle');
+    if (toggle) {
+        toggle.addEventListener('change', function() {
+            autoScrollEnabled = this.checked;
+            if (autoScrollEnabled) {
+                const container = document.getElementById('log-container');
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            }
+        });
+    }
+}
+
+function initLogResize() {
+    const logContainer = document.getElementById('log-container');
+    const resizeHandle = document.getElementById('log-resize-handle');
+    
+    if (!logContainer || !resizeHandle) return;
+
+    logContainer.style.height = DEFAULT_LOG_HEIGHT + 'px';
+
+    resizeHandle.addEventListener('mousedown', startDrag);
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', stopDrag);
+
+    function startDrag(e) {
+        isDragging = true;
+        startY = e.clientY;
+        startHeight = logContainer.offsetHeight;
+        document.body.style.cursor = 'ns-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+    }
+
+    function drag(e) {
+        if (!isDragging) return;
+        
+        const deltaY = e.clientY - startY;
+        let newHeight = startHeight + deltaY;
+        
+        if (newHeight < MIN_LOG_HEIGHT) {
+            newHeight = MIN_LOG_HEIGHT;
+        }
+        
+        const maxHeight = window.innerHeight * 0.8;
+        if (newHeight > maxHeight) {
+            newHeight = maxHeight;
+        }
+        
+        logContainer.style.height = newHeight + 'px';
+        
+        if (autoScrollEnabled) {
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+    }
+
+    function stopDrag() {
+        isDragging = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        
+        if (autoScrollEnabled) {
+            const logContainer = document.getElementById('log-container');
+            if (logContainer) {
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+        }
+    }
+}
+
 async function loadLogsData() {
     try {
+        // Fetch developer mode status
+        try {
+            const devModeResponse = await apiCall('/api/developer-mode');
+            const devModeData = await devModeResponse.json();
+            developerModeEnabled = devModeData.developerMode || false;
+        } catch (devModeError) {
+            console.warn('Failed to load developer mode status:', devModeError);
+            developerModeEnabled = false;
+        }
+
         // Fetch log configuration from backend to sync with MAX_QUEUE_SIZE
         try {
             const configResponse = await apiCall('/api/log-config');
@@ -18,6 +112,12 @@ async function loadLogsData() {
 
         // Initialize log level selector
         initLogLevelSelector();
+
+        // Initialize auto-scroll toggle
+        initAutoScrollToggle();
+
+        // Initialize log resizer
+        initLogResize();
 
         // Load log history
         const response = await apiCall('/api/log-history?limit=100');
@@ -33,8 +133,10 @@ async function loadLogsData() {
                     addLogEntry(log);
                 });
 
-                // Scroll to bottom on first load to show latest logs
-                container.scrollTop = container.scrollHeight;
+                // Scroll to bottom on first load if auto-scroll is enabled
+                if (autoScrollEnabled) {
+                    container.scrollTop = container.scrollHeight;
+                }
             } else {
                 container.innerHTML = `
                     <div class="flex justify-center items-center h-full">
@@ -174,6 +276,11 @@ function addLogEntry(log) {
     const message = log.message || log.content || '';
     const color = log.color || 'blue';
 
+    // Filter out DEBUG logs if developer mode is disabled
+    if (!developerModeEnabled && level.toUpperCase() === 'DEBUG') {
+        return;
+    }
+
     // Apply log level filter
     const currentFilter = AppState.data.logFilter.level;
     if (currentFilter !== 'all') {
@@ -221,12 +328,8 @@ function addLogEntry(log) {
     // Append to container
     container.appendChild(logEntry);
 
-    // Smart auto-scroll: only scroll to bottom if user is already at the bottom
-    // Calculate scroll position ratio (0 = top, 1 = bottom)
-    const scrollRatio = (container.scrollTop + container.clientHeight) / container.scrollHeight;
-
-    // Auto-scroll only if user is near the bottom (ratio > 0.99)
-    if (scrollRatio > 0.95) {
+    // Auto-scroll to bottom if enabled
+    if (autoScrollEnabled) {
         container.scrollTop = container.scrollHeight;
     }
 

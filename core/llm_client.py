@@ -53,6 +53,8 @@ class LLMClient:
                 del self.tools_definitions[i]
 
     async def execute_tool(self, event: KiraMessageBatchEvent, resp: LLMResponse, tool_set: Optional[ToolSet] = None):
+        logger.debug(f"[LLMClient] === execute_tool START ===")
+        logger.debug(f"[LLMClient] Total tool calls to execute: {len(resp.tool_calls)}")
         for tool_call in resp.tool_calls:
             tool_call_id = tool_call.get("id")
             name = tool_call.get("function", {}).get("name")
@@ -68,24 +70,34 @@ class LLMClient:
                 logger.error(f"Raw args: {raw_args}")
                 args = {}
             tool_logger.info(f"{name} args: {args}")
+            logger.debug(f"[LLMClient] Executing tool: {name}")
+            logger.debug(f"[LLMClient]   -> Tool call ID: {tool_call_id}")
+            logger.debug(f"[LLMClient]   -> Arguments: {args}")
 
             # Call corresponding Python function(s)
             if self.tools_functions and name in self.tools_functions:
                 try:
+                    logger.debug(f"[LLMClient]   -> Found in registered tools_functions")
                     result = await self.tools_functions[name](event, **args)
+                    logger.debug(f"[LLMClient]   -> Tool execution successful")
                 except Exception as e:
                     result = {"error": f"Failed to call tool '{name}': {e}"}
                     tool_logger.error(f"Failed to call tool '{name}': {e}")
+                    logger.debug(f"[LLMClient]   -> Tool execution failed: {e}")
             elif tool_set and name in tool_set:
                 try:
+                    logger.debug(f"[LLMClient]   -> Found in tool_set")
                     tool_inst = tool_set.get(name)
                     result = await tool_inst.execute()
+                    logger.debug(f"[LLMClient]   -> Tool execution successful")
                 except Exception as e:
                     result = {"error": f"Failed to call tool '{name}': {e}"}
                     tool_logger.error(f"Failed to call tool '{name}': {e}")
+                    logger.debug(f"[LLMClient]   -> Tool execution failed: {e}")
             else:
                 result = {"error": f"Tool {name} not implemented"}
                 tool_logger.error(f"Tool {name} not implemented")
+                logger.debug(f"[LLMClient]   -> Tool not found")
 
             if isinstance(result, ToolResult):
                 tool_result_obj = result
@@ -95,6 +107,7 @@ class LLMClient:
             from core.plugin.plugin_handlers import event_handler_reg, EventType
 
             # EventType.ON_TOOL_RESULT
+            logger.debug(f"[LLMClient] Executing ON_TOOL_RESULT handlers...")
             llm_handlers = event_handler_reg.get_handlers(event_type=EventType.ON_TOOL_RESULT)
             for handler in llm_handlers:
                 await handler.exec_handler(event, tool_result_obj)
@@ -105,12 +118,14 @@ class LLMClient:
             # Save tool results
             content = await tool_result_obj.assemble_result()
             tool_logger.info(f"tool_result: {content}")
+            logger.debug(f"[LLMClient]   -> Tool result: {content[:200]}{'...' if len(str(content)) > 200 else ''}")
             resp.tool_results.append({
                 "role": "tool",
                 "tool_call_id": tool_call_id,
                 "name": name,
                 "content": content
             })
+        logger.debug(f"[LLMClient] === execute_tool END ===")
 
     async def text_to_speech(self, text: str) -> Record:
         tts_model = self.provider_mgr.get_default_tts()

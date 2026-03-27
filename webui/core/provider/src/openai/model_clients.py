@@ -1,0 +1,190 @@
+from openai import AsyncOpenAI, APIStatusError, APITimeoutError, APIConnectionError
+import time
+from typing import Optional
+
+from core.provider import ModelInfo
+from core.provider import LLMModelClient, ImageModelClient, EmbeddingModelClient
+from core.provider.llm_model import LLMRequest, LLMResponse
+from core.logging_manager import get_logger
+from core.chat.message_elements import Image
+
+logger = get_logger("provider", "purple")
+
+
+class OpenAILLMClient(LLMModelClient):
+    def __init__(self, model: ModelInfo):
+        super().__init__(model)
+
+    async def chat(self, request: LLMRequest, **kwargs) -> LLMResponse:
+        client = AsyncOpenAI(
+            api_key=self.model.provider_config.get("api_key", ""),
+            base_url=self.model.provider_config.get("base_url", "")
+        )
+        try:
+            start_time = time.perf_counter()
+            temperature = self.model.model_config.get("temperature") if self.model.model_config else None
+            response = await client.chat.completions.create(
+                model=self.model.model_id,
+                messages=request.messages,
+                tools=request.tools if request.tools else None,
+                tool_choice=request.tool_choice if request.tool_choice != "none" else None,
+                temperature=temperature if temperature is not None else 1
+            )
+            end_time = time.perf_counter()
+            llm_resp = LLMResponse("")
+            llm_resp.time_consumed = round(end_time - start_time, 2)
+            if response.choices:
+                message = response.choices[0].message
+
+                if message.tool_calls:
+
+                    for tool_call in message.tool_calls:
+                        name = tool_call.function.name
+
+                        llm_resp.tool_calls.append({
+                            "id": tool_call.id,
+                            "type": "function",
+                            "function": {
+                                "name": name,
+                                "arguments": tool_call.function.arguments
+                            }
+                        })
+
+                content = message.content if message.content else ""
+                reasoning_content = getattr(message, "reasoning_content", "")
+                llm_resp.text_response = content
+                llm_resp.reasoning_content = reasoning_content
+                llm_resp.input_tokens = response.usage.prompt_tokens
+                llm_resp.output_tokens = response.usage.completion_tokens
+            return llm_resp
+        except APIStatusError as e:
+            # the model does not support function calling etc.
+            # 403 Authorization failed (api key error)
+            logger.error(f"APIStatusError: {e}")
+            return LLMResponse(text_response=f"[Error] APIStatusError: {e}")
+        except APITimeoutError as e:
+            logger.error(f"APITimeoutError: {e}")
+            return LLMResponse(text_response=f"[Error] APITimeoutError: {e}")
+        except APIConnectionError as e:
+            # APIConnectionError: Connection error. (base_url error)
+            logger.error(f"APIConnectionError: {e}")
+            return LLMResponse(text_response=f"[Error] APIConnectionError: {e}")
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            return LLMResponse(text_response=f"[Error] {e}")
+
+
+class OpenAIImageClient(ImageModelClient):
+    def __init__(self, model: ModelInfo):
+        super().__init__(model)
+
+    async def text_to_image(self, prompt) -> Image:
+        client = AsyncOpenAI(
+            base_url=self.model.provider_config.get("base_url", ""),
+            api_key=self.model.provider_config.get("api_key", ""),
+        )
+        image_size = self.model.model_config.get("size", None)
+        images_response = await client.images.generate(
+            model=self.model.model_id,
+            prompt=prompt,
+            size=image_size if image_size else None,
+            response_format="url",
+            extra_body={
+                "watermark": False,
+            },
+        )
+
+        return Image(image=images_response.data[0].url)
+
+    async def image_to_image(self, prompt: str, url: Optional[str] = None,
+                             base64: Optional[str] = None) -> Image:
+        pass
+
+
+class OpenAIEmbeddingClient(EmbeddingModelClient):
+    def __init__(self, model: ModelInfo):
+        super().__init__(model)
+
+    async def embed(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+
+        timeout_sec = self.model.model_config.get("timeout", 60) if self.model.model_config else 60
+        slow_threshold = self.model.model_config.get("slow_request_threshold", 5.0) if self.model.model_config else 5.0
+
+        client = AsyncOpenAI(
+            api_key=self.model.provider_config.get("api_key", ""),
+            base_url=self.model.provider_config.get("base_url", ""),
+            timeout=timeout_sec
+        )
+        try:
+            start_time = time.perf_counter()
+            response = await client.embeddings.create(
+                model=self.model.model_id,
+                input=texts
+            )
+            elapsed = round(time.perf_counter() - start_time, 2)
+            if elapsed > slow_threshold:
+                logger.warning(f"Slow embedding request: {elapsed}s (threshold: {slow_threshold}s, model: {self.model.model_id})")
+            return [item.embedding for item in response.data]
+        except (APIStatusError, APITimeoutError, APIConnectionError) as e:
+            logger.error(f"Embedding API error: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"Embedding error: {e}")
+            return []
+
+
+# class OpenAIEmbeddingClient(EmbeddingModelClient):
+#     def __init__(self, model: ModelInfo):
+#         super().__init__(model)
+#         self._client: Optional[AsyncOpenAI] = None
+
+#     async def generate(self, text: str) -> list[float]:
+#         if self._client is None:
+#             self._client = AsyncOpenAI(
+#                 api_key=self.model.provider_config.get("api_key", ""),
+#                 base_url=self.model.provider_config.get("base_url", "")
+#             )
+#         try:
+#             response = await self._client.embeddings.create(
+#                 model=self.model.model_id,
+#                 input=text
+#             )
+#             return response.data[0].embedding
+#         except APIStatusError as e:
+#             # the model does not support function calling etc.
+#             # 403 Authorization failed (api key error)
+#             logger.error(f"APIStatusError: {e}")
+#         except APITimeoutError as e:
+#             logger.error(f"APITimeoutError: {e}")
+#         except APIConnectionError as e:
+#             # APIConnectionError: Connection error.(base_url error)
+#             logger.error(f"APIConnectionError: {e}")
+#         except Exception as e:
+#             logger.error(f"Error: {e}")
+
+#     async def generate_batch(self, texts: list[str]) -> list[list[float]]:
+#         if self._client is None:
+#             self._client = AsyncOpenAI(
+#                 api_key=self.model.provider_config.get("api_key", ""),
+#                 base_url=self.model.provider_config.get("base_url", "")
+#             )
+#         try:
+#             response = await self._client.embeddings.create(
+#                 model=self.model.model_id,
+#                 input=texts
+#             )
+#             sorted_data = sorted(response.data, key=lambda x: x.index)
+#             return [item.embedding for item in sorted_data]
+#         except APIStatusError as e:
+#             # the model does not support function calling etc.
+#             # 403 Authorization failed (api key error)
+#             logger.error(f"APIStatusError: {e}")
+#         except APITimeoutError as e:
+#             logger.error(f"APITimeoutError: {e}")
+#         except APIConnectionError as e:
+#             # APIConnectionError: Connection error.(base_url error)
+#             logger.error(f"APIConnectionError: {e}")
+#         except Exception as e:
+#             logger.error(f"Error: {e}")

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KiraAI Admin Panel</title>
+    <title>KiraAI-CE Admin Panel</title>
 
     <!-- Apply theme immediately to prevent flash -->
     <script>
@@ -55,7 +55,7 @@
         <aside id="sidebar" class="w-64 sidebar-gradient text-gray-800 flex flex-col">
             <!-- Logo -->
             <div class="p-6 border-b border-blue-200/30">
-                <h1 class="text-2xl font-bold text-gray-800" data-i18n="app.title">KiraAI</h1>
+                <h1 class="text-2xl font-bold text-gray-800" data-i18n="app.title">KiraAI-CE</h1>
                 <p id="app-version" class="text-sm text-gray-600 mt-1">-</p>
             </div>
             
@@ -172,7 +172,7 @@
                 
                 <a href="#" 
                    data-page="settings" 
-                   class="nav-item flex items-center justify-between px-4 py-3 rounded-lg transition-colors">
+                   class="nav-item flex items-center justify-between px-4 py-3 rounded-lg transition-colors hidden">
                     <div class="flex items-center">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
@@ -551,7 +551,7 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="mb-4 flex space-x-4">
+                        <div class="mb-4 flex items-center gap-4">
                             <select id="log-level-selector" data-custom-select data-placeholder="Select Level">
                                 <option value="all" data-i18n="logs.level_all">All Levels</option>
                                 <option value="debug" data-i18n="logs.level_debug">Debug</option>
@@ -560,13 +560,23 @@
                                 <option value="error" data-i18n="logs.level_error">Error</option>
                             </select>
                             <input type="text" class="flex-1 border border-gray-300 rounded-lg px-3 py-2" placeholder="Search logs..." data-i18n-placeholder="logs.search_placeholder">
+                            <label class="flex items-center gap-2 cursor-pointer whitespace-nowrap">
+                                <input type="checkbox" id="auto-scroll-toggle" checked class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <span class="text-sm text-gray-700 dark:text-gray-300" data-i18n="logs.auto_scroll">Auto-scroll to bottom</span>
+                            </label>
                         </div>
-                        <div id="log-container" class="bg-gray-50 rounded-lg p-4 h-96 overflow-y-auto font-mono text-base">
-                            <div class="flex justify-center items-center h-full">
-                                <p class="text-gray-500" data-i18n="logs.no_logs">No logs available</p>
+                        <div id="log-container-wrapper" class="relative">
+                            <div id="log-container" class="bg-gray-50 rounded-lg rounded-b-none p-4 font-mono text-base">
+                                <div class="flex justify-center items-center h-full">
+                                    <p class="text-gray-500" data-i18n="logs.no_logs">No logs available</p>
+                                </div>
+                            </div>
+                            <div id="log-resize-handle" class="h-3 bg-gray-200 dark:bg-gray-700 cursor-ns-resize hover:bg-gray-300 dark:hover:bg-gray-600 rounded-b-lg flex items-center justify-center transition-colors duration-150 border-t border-gray-300 dark:border-gray-600">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
+                                </svg>
                             </div>
                         </div>
-                    </div>
                 </div>
                 
                 <!-- Settings Page -->
@@ -576,14 +586,14 @@
                         <div class="space-y-6">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="settings.language">Language</label>
-                                <select id="settings-language" data-custom-select data-placeholder="Select Language">
+                                <select id="settings-language" class="w-full border border-gray-300 rounded-lg px-3 py-2">
                                     <option value="en">English</option>
                                     <option value="zh">中文</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="settings.theme">Theme</label>
-                                <select id="settings-theme" data-custom-select data-placeholder="Select Theme">
+                                <select id="settings-theme" class="w-full border border-gray-300 rounded-lg px-3 py-2">
                                     <option value="light" data-i18n="settings.theme_light">Light</option>
                                     <option value="dark" data-i18n="settings.theme_dark">Dark</option>
                                 </select>

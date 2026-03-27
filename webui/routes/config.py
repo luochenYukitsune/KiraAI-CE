@@ -2,7 +2,7 @@ from typing import Dict
 
 from fastapi import Depends, HTTPException
 
-from core.logging_manager import get_logger
+from core.logging_manager import get_logger, set_developer_mode
 from webui.routes.auth import require_auth
 from webui.routes.base import RouteDefinition, Routes
 
@@ -72,8 +72,15 @@ class ConfigRoutes(Routes):
         models = payload.get("models")
         updated = False
         if isinstance(bot_config, dict):
+            old_developer_mode = config.get("bot_config", {}).get("framework", {}).get("developer_mode", False)
+            new_developer_mode = bot_config.get("framework", {}).get("developer_mode", False)
+            
             config["bot_config"] = bot_config
             updated = True
+            
+            if old_developer_mode != new_developer_mode:
+                set_developer_mode(new_developer_mode)
+                logger.info(f"Developer mode {'enabled' if new_developer_mode else 'disabled'}")
         if isinstance(models, dict):
             config["models"] = models
             updated = True

@@ -272,21 +272,27 @@ class MessageProcessor:
         logger.info(event.get_log_info())
 
         # decorating event info
+        logger.debug(f"[MessageProcessor] Step 1: Processing IM message event...")
 
         sid = event.session.sid
 
         event.session.session_description = self.memory_manager.get_session_info(sid).session_description
 
         # EventType.ON_IM_MESSAGE
+        logger.debug(f"[MessageProcessor] Step 2: Executing ON_IM_MESSAGE handlers...")
         im_handlers = event_handler_reg.get_handlers(event_type=EventType.ON_IM_MESSAGE)
         for handler in im_handlers:
+            logger.debug(f"[MessageProcessor]   -> Executing handler: {handler.desc or handler.handler.__name__}")
             await handler.exec_handler(event)
             if event.is_stopped:
+                logger.debug(f"[MessageProcessor] Event stopped by handler")
                 return
         if event.process_strategy == "discard":
+            logger.debug(f"[MessageProcessor] Message discarded by strategy")
             return
 
         if event.process_strategy == "trigger":
+            logger.debug(f"[MessageProcessor] Step 3: Strategy=trigger, creating batch message...")
             batch_msg = KiraMessageBatchEvent(
                 message_types=event.message_types,
                 timestamp=int(time.time()),
@@ -298,17 +304,21 @@ class MessageProcessor:
             return
 
         if event.process_strategy == "buffer":
+            logger.debug(f"[MessageProcessor] Step 3: Strategy=buffer, adding message to session buffer...")
             buffer = self.session_buffer.get_buffer(sid)
             async with buffer.lock:
                 buffer.add(event)
 
             # EventType.ON_MESSAGE_BUFFERED
+            logger.debug(f"[MessageProcessor] Executing ON_MESSAGE_BUFFERED handlers...")
             im_handlers = event_handler_reg.get_handlers(event_type=EventType.ON_MESSAGE_BUFFERED)
             for handler in im_handlers:
                 await handler.exec_handler(event.session.sid)
+            logger.debug(f"[MessageProcessor] Message buffered, current buffer length: {buffer.get_length()}")
             return
 
         if event.process_strategy == "flush":
+            logger.debug(f"[MessageProcessor] Step 3: Strategy=flush, flushing session buffer...")
             flushed = await self.flush_session_messages(sid, extra_event=event)
             if not flushed:
                 logger.warning(f"No pending messages to flush for session {sid}")
@@ -317,29 +327,38 @@ class MessageProcessor:
     async def handle_im_batch_message(self, event: KiraMessageBatchEvent):
         # Start processing
         sid = event.session.sid
+        logger.debug(f"[MessageProcessor] === handle_im_batch_message START ===")
+        logger.debug(f"[MessageProcessor] Session ID: {sid}")
 
+        logger.debug(f"[MessageProcessor] Step 1: Converting messages to text format...")
         for i, message in enumerate(event.messages):
             # TODO Add support for multimodal image/document comprehension
             message_str = await self.message_format_to_text(message.chain)
             message.message_str = message_str
+            logger.debug(f"[MessageProcessor]   -> Message {i+1}: {message_str[:100]}{'...' if len(message_str) > 100 else ''}")
 
         # EventType.ON_IM_BATCH_MESSAGE
+        logger.debug(f"[MessageProcessor] Step 2: Executing ON_IM_BATCH_MESSAGE handlers...")
         im_batch_handlers = event_handler_reg.get_handlers(event_type=EventType.ON_IM_BATCH_MESSAGE)
         for handler in im_batch_handlers:
+            logger.debug(f"[MessageProcessor]   -> Executing handler: {handler.desc or handler.handler.__name__}")
             await handler.exec_handler(event)
             if event.is_stopped:
                 logger.info("Event stopped")
                 return
 
         # Get existing session
+        logger.debug(f"[MessageProcessor] Step 3: Getting session info and chat history...")
         session_list = self.get_session_list_prompt()
 
         # Set session title
         if not self.memory_manager.get_session_info(sid).session_title:
             self.memory_manager.update_session_info(sid, event.session.session_title)
         session_title = self.memory_manager.get_session_info(sid).session_title
+        logger.debug(f"[MessageProcessor]   -> Session title: {session_title}")
 
         # Build chat environment
+        logger.debug(f"[MessageProcessor] Step 4: Building chat environment...")
         chat_env = {
             "platform": event.adapter.platform,
             "adapter": event.adapter.name,
@@ -349,32 +368,42 @@ class MessageProcessor:
             "session_description": event.session.session_description,
             "session_list": session_list
         }
+        logger.debug(f"[MessageProcessor]   -> Platform: {chat_env['platform']}, Chat type: {chat_env['chat_type']}")
 
         # Get chat history memory
+        logger.debug(f"[MessageProcessor] Step 5: Fetching chat history memory...")
         session_memory = self.memory_manager.fetch_memory(sid)
+        logger.debug(f"[MessageProcessor]   -> Memory entries: {len(session_memory)}")
 
         # Generate agent prompt
+        logger.debug(f"[MessageProcessor] Step 6: Generating agent prompt...")
         agent_prompt_list = self.prompt_manager.get_agent_prompt(chat_env)
 
         # Get default LLM model client
+        logger.debug(f"[MessageProcessor] Step 7: Getting default LLM model...")
         llm_model = self.provider_mgr.get_default_llm()
         if not llm_model:
             llm_logger.error(f"Default LLM model not set, please set it in Configuration")
             return
+        logger.debug(f"[MessageProcessor]   -> LLM Model: {llm_model.model.model_id} (Provider: {llm_model.model.provider_name})")
 
         request = LLMRequest(messages=session_memory[:], tools=self.llm_api.tools_definitions, tool_funcs=self.llm_api.tools_functions, tool_set=ToolSet())
         request.system_prompt.extend(agent_prompt_list)
 
         # Add received im messages
+        logger.debug(f"[MessageProcessor] Step 8: Building LLM request with user messages...")
         for i, message in enumerate(event.messages):
             request.user_prompt.append(Prompt(message.message_str, name="message", source="system"))
 
         # Build tag set
+        logger.debug(f"[MessageProcessor] Step 9: Building tag set...")
         tag_set = TagSet()
 
         # EventType.ON_LLM_REQUEST
+        logger.debug(f"[MessageProcessor] Step 10: Executing ON_LLM_REQUEST handlers...")
         llm_handlers = event_handler_reg.get_handlers(event_type=EventType.ON_LLM_REQUEST)
         for handler in llm_handlers:
+            logger.debug(f"[MessageProcessor]   -> Executing handler: {handler.desc or handler.handler.__name__}")
             await handler.exec_handler(event, request, tag_set)
             if event.is_stopped:
                 logger.info("Event stopped while llm request stage")
@@ -384,6 +413,7 @@ class MessageProcessor:
         tag_set.register(*tag_registry.get_all())
 
         # Assemble messages
+        logger.debug(f"[MessageProcessor] Step 11: Assembling prompt messages...")
         for sp in request.system_prompt:
             if sp.name == "format":
                 sp.content = sp.content.replace("<|message_types|>", tag_set.to_prompt())
@@ -409,6 +439,7 @@ class MessageProcessor:
             max_tool_loop = 2
 
         max_agent_steps = max_tool_loop + 1
+        logger.debug(f"[MessageProcessor] Step 12: Creating AgentExecutor (max_steps={max_agent_steps})...")
 
         agent_executor = AgentExecutor(self.llm_api, request.tool_set)
         agent_ctx = AgentExecutionContext(
@@ -422,6 +453,7 @@ class MessageProcessor:
             text = resp.text_response
             session_lock = self.get_session_lock(sid)
             async with session_lock:
+                logger.debug(f"[MessageProcessor] Step 13: Parsing and sending LLM text response...")
                 message_results = await self.send_xml_messages(event, text.strip(), tag_set)
                 if message_results is None:
                     return
@@ -445,6 +477,7 @@ class MessageProcessor:
 
         # Iter agent executor to get LLMResponse
         # TODO use llm_semaphore to restrict concurrent LLM requests
+        logger.debug(f"[MessageProcessor] Step 14: Starting Agent execution loop...")
         async for step in agent_executor.run(agent_ctx, max_steps=max_agent_steps):
             llm_resp = step.llm_response
             if not llm_resp:
@@ -459,7 +492,9 @@ class MessageProcessor:
             # Process tool calls if existed
 
         # Save new memory
+        logger.debug(f"[MessageProcessor] Step 15: Saving new memory to session...")
         self.memory_manager.update_memory(sid, new_memory.memory_list)
+        logger.debug(f"[MessageProcessor] === handle_im_batch_message END ===")
 
     async def handle_cmt_message(self, msg: KiraCommentEvent):
         """process comment message"""

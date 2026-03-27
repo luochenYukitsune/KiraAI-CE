@@ -189,15 +189,18 @@ class AdapterManager:
                 logger.warning(f"No adapter class found in {adapter_dir}")
 
     async def initialize(self):
+        logger.debug("[AdapterManager] === initialize START ===")
         for adapter_id in self.adas_config.keys():
             info = self.get_adapter_info(adapter_id)
             if not info:
                 continue
             try:
+                logger.debug(f"[AdapterManager] Registering adapter: {adapter_id} (platform: {info.platform})")
                 await self.register_adapter(info)
             except Exception as e:
                 logger.error(f"Failed to register adapter {adapter_id}: {e}")
         logger.info(f"Adapters set: {list(self._adapters.keys())}")
+        logger.debug("[AdapterManager] === initialize END ===")
 
     def generate_adapter_config(self, platform: str, name: str) -> Optional[str]:
         schema_fields = self.get_schema(platform)
@@ -353,6 +356,7 @@ class AdapterManager:
         return info
 
     async def register_adapter(self, info: AdapterInfo):
+        logger.debug(f"[AdapterManager] === register_adapter START ===")
         platform = info.platform
         name = info.name or info.adapter_id
         if not platform:
@@ -365,8 +369,10 @@ class AdapterManager:
             return
 
         if not info.enabled:
+            logger.debug(f"[AdapterManager] Adapter {name} is disabled, skipping")
             return
 
+        logger.debug(f"[AdapterManager] Creating instance for adapter: {name}")
         try:
             if issubclass(adapter_cls, IMAdapter):
                 instance = adapter_cls(info, self.loop, self.event_queue, self.llm_api)
@@ -380,7 +386,9 @@ class AdapterManager:
             return
 
         self._adapters[name] = instance
+        logger.debug(f"[AdapterManager] Adapter instance created, starting...")
         await self.start_adapter(name)
+        logger.debug(f"[AdapterManager] === register_adapter END ===")
 
     async def start_adapter(self, name):
         """start an adapter by specified adapter name"""
