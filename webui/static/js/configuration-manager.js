@@ -141,6 +141,71 @@ class ConfigurationManager {
                         hintFallback: 'Unless you know what you are doing, do not enable this',
                         type: 'switch',
                         default: false
+                    },
+                    {
+                        key: 'bot_config.framework.aero_enabled',
+                        labelKey: 'configuration.message.aero_enabled',
+                        labelFallback: 'Enable Aero Effect',
+                        hintKey: 'configuration.hints.aero_enabled',
+                        hintFallback: 'Enable glass transparency and blur effects',
+                        type: 'switch',
+                        default: true
+                    },
+                    {
+                        key: 'bot_config.framework.blur_intensity',
+                        labelKey: 'configuration.message.blur_intensity',
+                        labelFallback: 'Blur Intensity',
+                        hintKey: 'configuration.hints.blur_intensity',
+                        hintFallback: 'Adjust the blur effect intensity (0-30px)',
+                        type: 'range',
+                        default: 16,
+                        min: 0,
+                        max: 30,
+                        step: 1
+                    },
+                    {
+                        key: 'bot_config.framework.aero_opacity',
+                        labelKey: 'configuration.message.aero_opacity',
+                        labelFallback: 'Glass Opacity',
+                        hintKey: 'configuration.hints.aero_opacity',
+                        hintFallback: 'Adjust the glass transparency (0.3-1.0)',
+                        type: 'range',
+                        default: 0.7,
+                        min: 0.3,
+                        max: 1.0,
+                        step: 0.05
+                    },
+                    {
+                        key: 'bot_config.framework.modal_backdrop_blur_enabled',
+                        labelKey: 'configuration.message.modal_backdrop_blur_enabled',
+                        labelFallback: 'Enable Modal Backdrop Blur',
+                        hintKey: 'configuration.hints.modal_backdrop_blur_enabled',
+                        hintFallback: 'Enable blur effect for modal backgrounds',
+                        type: 'switch',
+                        default: true
+                    },
+                    {
+                        key: 'bot_config.framework.modal_backdrop_blur_intensity',
+                        labelKey: 'configuration.message.modal_backdrop_blur_intensity',
+                        labelFallback: 'Modal Backdrop Blur Intensity',
+                        hintKey: 'configuration.hints.modal_backdrop_blur_intensity',
+                        hintFallback: 'Adjust the modal backdrop blur intensity (0-30px)',
+                        type: 'range',
+                        default: 8,
+                        min: 0,
+                        max: 30,
+                        step: 1
+                    }
+                ],
+                actions: [
+                    {
+                        key: 'reset_framework',
+                        labelKey: 'configuration.message.reset_framework',
+                        labelFallback: 'Reset to Defaults',
+                        hintKey: 'configuration.hints.reset_framework',
+                        hintFallback: 'Reset all framework settings to default values',
+                        type: 'button',
+                        action: 'resetFramework'
                     }
                 ]
             },
@@ -455,6 +520,28 @@ class ConfigurationManager {
             body.appendChild(fieldsContainer);
         }
 
+        // Render actions if any
+        if (group.actions && group.actions.length > 0) {
+            const actionsContainer = document.createElement('div');
+            actionsContainer.className = 'mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-3';
+            
+            group.actions.forEach(action => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm font-medium';
+                button.textContent = this._t(action.labelKey, action.labelFallback);
+                button.title = this._t(action.hintKey, action.hintFallback);
+                
+                if (action.action === 'resetFramework') {
+                    button.addEventListener('click', () => this._resetFrameworkSettings());
+                }
+                
+                actionsContainer.appendChild(button);
+            });
+            
+            body.appendChild(actionsContainer);
+        }
+
         wrapper.appendChild(header);
         wrapper.appendChild(body);
         return wrapper;
@@ -533,6 +620,34 @@ class ConfigurationManager {
                 this._recordChange(field.key, this._getNestedValue(this.currentData, field.key), newVal);
                 this._setNestedValue(this.currentData, field.key, newVal);
                 this._updateModifiedState(field.key);
+                
+                // Handle aero_enabled toggle
+                if (field.key === 'bot_config.framework.aero_enabled') {
+                    if (newVal) {
+                        document.body.classList.remove('no-aero');
+                        const blurIntensity = this._getNestedValue(this.currentData, 'bot_config.framework.blur_intensity') || 16;
+                        const aeroOpacity = this._getNestedValue(this.currentData, 'bot_config.framework.aero_opacity') || 0.7;
+                        document.documentElement.style.setProperty('--blur-intensity', `${blurIntensity}px`);
+                        document.documentElement.style.setProperty('--aero-opacity', aeroOpacity);
+                    } else {
+                        document.body.classList.add('no-aero');
+                        document.documentElement.style.setProperty('--blur-intensity', '0px');
+                        document.documentElement.style.setProperty('--aero-opacity', '1');
+                    }
+                }
+                
+                // Handle modal_backdrop_blur_enabled toggle
+                if (field.key === 'bot_config.framework.modal_backdrop_blur_enabled') {
+                    if (newVal) {
+                        document.body.classList.remove('no-modal-backdrop-blur');
+                        const blurIntensity = this._getNestedValue(this.currentData, 'bot_config.framework.modal_backdrop_blur_intensity') || 8;
+                        document.documentElement.style.setProperty('--modal-backdrop-blur', `${blurIntensity}px`);
+                    } else {
+                        document.body.classList.add('no-modal-backdrop-blur');
+                        document.documentElement.style.setProperty('--modal-backdrop-blur', '0px');
+                    }
+                }
+                
                 this.render();
             };
             input.addEventListener('click', toggleSwitch);
@@ -542,6 +657,56 @@ class ConfigurationManager {
                     toggleSwitch();
                 }
             });
+        } else if (field.type === 'range') {
+            const container = document.createElement('div');
+            container.className = 'flex items-center gap-4';
+            
+            const rangeInput = document.createElement('input');
+            rangeInput.type = 'range';
+            rangeInput.min = field.min !== undefined ? field.min : 0;
+            rangeInput.max = field.max !== undefined ? field.max : 100;
+            rangeInput.step = field.step !== undefined ? field.step : 1;
+            rangeInput.value = value !== undefined ? value : (field.default !== undefined ? field.default : rangeInput.min);
+            rangeInput.className = 'flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer';
+            rangeInput.setAttribute('data-config-key', field.key);
+            rangeInput.setAttribute('data-config-type', 'float');
+            
+            const valueDisplay = document.createElement('span');
+            valueDisplay.className = 'text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[3rem] text-right';
+            valueDisplay.textContent = rangeInput.value;
+            
+            rangeInput.addEventListener('input', (e) => {
+                const oldVal = this._getNestedValue(this.currentData, field.key);
+                const newVal = Number(e.target.value);
+                valueDisplay.textContent = newVal;
+                
+                this._recordChange(field.key, oldVal, newVal);
+                this._setNestedValue(this.currentData, field.key, newVal);
+                this._updateModifiedState(field.key);
+                this._updateToolbar();
+                
+                // Update CSS variables for real-time preview
+                if (field.key === 'bot_config.framework.blur_intensity') {
+                    const aeroEnabled = this._getNestedValue(this.currentData, 'bot_config.framework.aero_enabled');
+                    if (aeroEnabled !== false) {
+                        document.documentElement.style.setProperty('--blur-intensity', `${newVal}px`);
+                    }
+                } else if (field.key === 'bot_config.framework.aero_opacity') {
+                    const aeroEnabled = this._getNestedValue(this.currentData, 'bot_config.framework.aero_enabled');
+                    if (aeroEnabled !== false) {
+                        document.documentElement.style.setProperty('--aero-opacity', newVal);
+                    }
+                } else if (field.key === 'bot_config.framework.modal_backdrop_blur_intensity') {
+                    const modalBackdropBlurEnabled = this._getNestedValue(this.currentData, 'bot_config.framework.modal_backdrop_blur_enabled');
+                    if (modalBackdropBlurEnabled !== false) {
+                        document.documentElement.style.setProperty('--modal-backdrop-blur', `${newVal}px`);
+                    }
+                }
+            });
+            
+            container.appendChild(rangeInput);
+            container.appendChild(valueDisplay);
+            input = container;
         } else {
             // String type
             input = document.createElement('input');
@@ -1108,6 +1273,42 @@ class ConfigurationManager {
     collapseAll() {
         const schema = this.getSchema();
         schema.forEach(g => { this.collapsedGroups.add(g.id); });
+        this.render();
+    }
+
+    _resetFrameworkSettings() {
+        const frameworkGroup = this.getSchema().find(g => g.id === 'framework');
+        if (!frameworkGroup) return;
+
+        const defaults = {
+            'bot_config.framework.developer_mode': false,
+            'bot_config.framework.aero_enabled': true,
+            'bot_config.framework.blur_intensity': 16,
+            'bot_config.framework.aero_opacity': 0.7,
+            'bot_config.framework.modal_backdrop_blur_enabled': true,
+            'bot_config.framework.modal_backdrop_blur_intensity': 8
+        };
+
+        frameworkGroup.fields.forEach(field => {
+            const defaultVal = defaults[field.key];
+            if (defaultVal !== undefined) {
+                const oldVal = this._getNestedValue(this.currentData, field.key);
+                this._recordChange(field.key, oldVal, defaultVal);
+                this._setNestedValue(this.currentData, field.key, defaultVal);
+                this._updateModifiedState(field.key);
+            }
+        });
+
+        // Apply Aero effect defaults
+        document.body.classList.remove('no-aero');
+        document.documentElement.style.setProperty('--blur-intensity', '16px');
+        document.documentElement.style.setProperty('--aero-opacity', '0.7');
+        
+        // Apply modal backdrop blur defaults
+        document.body.classList.remove('no-modal-backdrop-blur');
+        document.documentElement.style.setProperty('--modal-backdrop-blur', '8px');
+
+        this._updateToolbar();
         this.render();
     }
 }

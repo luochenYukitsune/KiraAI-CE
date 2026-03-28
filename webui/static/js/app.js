@@ -42,6 +42,11 @@ function initializeApp() {
     const savedTheme = localStorage.getItem('theme') || 'light';
     applyTheme(savedTheme);
 
+    // Apply saved Aero effect settings
+    if (typeof loadAeroEffect === 'function') {
+        loadAeroEffect();
+    }
+
     setupThemeToggle();
     setupNavigation();
     loadAppVersion();

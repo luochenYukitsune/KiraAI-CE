@@ -236,7 +236,13 @@ window._locale_en = {
             max_message_delay: "Maximum delay in seconds before sending a reply",
             max_tool_loop: "Maximum number of tool call iterations per response",
             selfie_path: "Path to the bot appearance reference image",
-            developer_mode: "Unless you know what you are doing, do not enable this"
+            developer_mode: "Unless you know what you are doing, do not enable this",
+            aero_enabled: "Enable glass transparency and blur effects",
+            blur_intensity: "Adjust the blur effect intensity (0-30px)",
+            aero_opacity: "Adjust the glass transparency (0.3-1.0), lower values mean more transparent",
+            modal_backdrop_blur_enabled: "Enable blur effect for modal backgrounds",
+            modal_backdrop_blur_intensity: "Adjust the modal backdrop blur intensity (0-30px)",
+            reset_framework: "Reset all framework settings to default values"
         },
         validation: {
             required: "This field is required",
@@ -279,7 +285,13 @@ window._locale_en = {
             max_tool_loop: "Max Tool Loop",
             selfie_section: "Selfie",
             selfie_path: "Selfie Path",
-            developer_mode: "Developer Mode"
+            developer_mode: "Developer Mode",
+            aero_enabled: "Enable Aero Effect",
+            blur_intensity: "Blur Intensity",
+            aero_opacity: "Glass Opacity",
+            modal_backdrop_blur_enabled: "Enable Modal Backdrop Blur",
+            modal_backdrop_blur_intensity: "Modal Backdrop Blur Intensity",
+            reset_framework: "Reset to Defaults"
         },
         model: {
             section_title: "Default Models",

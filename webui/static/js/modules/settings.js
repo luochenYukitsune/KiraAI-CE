@@ -82,6 +82,96 @@ function applyTheme(theme) {
     Monaco.syncTheme();
 }
 
+/**
+ * Apply Aero effect (blur and opacity) to the application.
+ * @param {boolean} aeroEnabled - Whether Aero effect is enabled
+ * @param {number} blurIntensity - Blur intensity in pixels (0-30)
+ * @param {number} aeroOpacity - Glass opacity (0.3-1.0)
+ */
+function applyAeroEffect(aeroEnabled, blurIntensity, aeroOpacity) {
+    const root = document.documentElement;
+    const body = document.body;
+    
+    if (aeroEnabled) {
+        body.classList.remove('no-aero');
+        root.style.setProperty('--blur-intensity', `${blurIntensity}px`);
+        root.style.setProperty('--aero-opacity', aeroOpacity);
+    } else {
+        body.classList.add('no-aero');
+        root.style.setProperty('--blur-intensity', '0px');
+        root.style.setProperty('--aero-opacity', '1');
+    }
+    
+    // Persist to localStorage
+    localStorage.setItem('aero_enabled', aeroEnabled);
+    localStorage.setItem('blur_intensity', blurIntensity);
+    localStorage.setItem('aero_opacity', aeroOpacity);
+}
+
+/**
+ * Load and apply saved Aero effect settings.
+ */
+function loadAeroEffect() {
+    const savedAeroEnabled = localStorage.getItem('aero_enabled');
+    const savedBlur = localStorage.getItem('blur_intensity');
+    const savedOpacity = localStorage.getItem('aero_opacity');
+    
+    const aeroEnabled = savedAeroEnabled !== null ? savedAeroEnabled === 'true' : true;
+    const blurIntensity = savedBlur !== null ? Number(savedBlur) : 16;
+    const aeroOpacity = savedOpacity !== null ? Number(savedOpacity) : 0.7;
+    
+    applyAeroEffect(aeroEnabled, blurIntensity, aeroOpacity);
+}
+
+/**
+ * Reset Aero effect settings to defaults.
+ */
+function resetAeroEffect() {
+    applyAeroEffect(true, 16, 0.7);
+}
+
+/**
+ * Apply modal backdrop blur effect to the application.
+ * @param {boolean} modalBackdropBlurEnabled - Whether modal backdrop blur is enabled
+ * @param {number} modalBackdropBlurIntensity - Modal backdrop blur intensity in pixels (0-30)
+ */
+function applyModalBackdropBlur(modalBackdropBlurEnabled, modalBackdropBlurIntensity) {
+    const root = document.documentElement;
+    const body = document.body;
+    
+    if (modalBackdropBlurEnabled) {
+        body.classList.remove('no-modal-backdrop-blur');
+        root.style.setProperty('--modal-backdrop-blur', `${modalBackdropBlurIntensity}px`);
+    } else {
+        body.classList.add('no-modal-backdrop-blur');
+        root.style.setProperty('--modal-backdrop-blur', '0px');
+    }
+    
+    // Persist to localStorage
+    localStorage.setItem('modal_backdrop_blur_enabled', modalBackdropBlurEnabled);
+    localStorage.setItem('modal_backdrop_blur_intensity', modalBackdropBlurIntensity);
+}
+
+/**
+ * Load and apply saved modal backdrop blur settings.
+ */
+function loadModalBackdropBlur() {
+    const savedEnabled = localStorage.getItem('modal_backdrop_blur_enabled');
+    const savedIntensity = localStorage.getItem('modal_backdrop_blur_intensity');
+    
+    const enabled = savedEnabled !== null ? savedEnabled === 'true' : true;
+    const intensity = savedIntensity !== null ? Number(savedIntensity) : 8;
+    
+    applyModalBackdropBlur(enabled, intensity);
+}
+
+/**
+ * Reset modal backdrop blur settings to defaults.
+ */
+function resetModalBackdropBlur() {
+    applyModalBackdropBlur(true, 8);
+}
+
 // ---------------------------------------------------------------------------
 // Settings page
 // ---------------------------------------------------------------------------

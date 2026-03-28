@@ -236,7 +236,13 @@ window._locale_zh = {
             max_message_delay: "发送回复前的最大延迟秒数",
             max_tool_loop: "每次响应的最大工具调用迭代次数",
             selfie_path: "机器人外观参考图片路径",
-            developer_mode: "除非你知道你在干什么，不然不要打开它"
+            developer_mode: "除非你知道你在干什么，不然不要打开它",
+            aero_enabled: "启用玻璃透明和模糊效果",
+            blur_intensity: "调整界面模糊效果强度 (0-30px)",
+            aero_opacity: "调整玻璃透明度 (0.3-1.0)，数值越小透明度越高",
+            modal_backdrop_blur_enabled: "启用弹窗背景模糊",
+            modal_backdrop_blur_intensity: "调整弹窗背景模糊强度 (0-30px)",
+            reset_framework: "重置所有框架设置到默认值"
         },
         validation: {
             required: "此字段为必填项",
@@ -279,7 +285,13 @@ window._locale_zh = {
             max_tool_loop: "最大工具循环次数",
             selfie_section: "形象",
             selfie_path: "形象参考图路径",
-            developer_mode: "开发者模式"
+            developer_mode: "开发者模式",
+            aero_enabled: "启用透明效果",
+            blur_intensity: "模糊强度",
+            aero_opacity: "玻璃透明度",
+            modal_backdrop_blur_enabled: "启用弹窗背景模糊",
+            modal_backdrop_blur_intensity: "弹窗背景模糊强度",
+            reset_framework: "重置到默认值"
         },
         model: {
             section_title: "默认模型",

@@ -17,45 +17,6 @@ const resources = {
     }
 };
 
-// Initialize i18next
-i18next
-    .use(i18nextBrowserLanguageDetector)
-    .init({
-        resources: resources,
-        fallbackLng: 'en',
-        debug: false,
-        interpolation: {
-            escapeValue: false
-        }
-    })
-    .then(() => {
-        // Update all elements with data-i18n attribute
-        updateTranslations();
-        
-        // Sync language selector with current language
-        const languageSelector = document.getElementById('language-selector');
-        if (languageSelector) {
-            languageSelector.value = i18next.language;
-        }
-        
-        // Listen for language changes
-        if (languageSelector) {
-            languageSelector.addEventListener('change', (e) => {
-                if (window.i18n && typeof window.i18n.changeLanguage === 'function') {
-                    window.i18n.changeLanguage(e.target.value).catch((error) => {
-                        console.error('Failed to change language:', error);
-                    });
-                } else {
-                    i18next.changeLanguage(e.target.value).then(() => {
-                        updateTranslations();
-                    }).catch((error) => {
-                        console.error('Failed to change language:', error);
-                    });
-                }
-            });
-        }
-    });
-
 /**
  * Update all elements with data-i18n attribute
  */
@@ -117,6 +78,58 @@ function updateTranslations() {
         }
     });
 }
+
+// Initialize i18next
+i18next
+    .use(i18nextBrowserLanguageDetector)
+    .init({
+        resources: resources,
+        fallbackLng: 'en',
+        debug: false,
+        interpolation: {
+            escapeValue: false
+        }
+    })
+    .then(() => {
+        // Update all elements with data-i18n attribute
+        updateTranslations();
+        
+        // Sync language selector with current language after DOM is ready
+        const syncLanguageSelector = () => {
+            const languageSelector = document.getElementById('language-selector');
+            if (languageSelector) {
+                languageSelector.value = i18next.language;
+            }
+        };
+        
+        // Run immediately if DOM is ready, otherwise wait
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', syncLanguageSelector);
+        } else {
+            syncLanguageSelector();
+        }
+    });
+
+// Use event delegation to handle language selector changes
+// This works with both native select and CustomSelect
+document.addEventListener('change', (e) => {
+    if (e.target.id === 'language-selector') {
+        const newLang = e.target.value;
+        i18next.changeLanguage(newLang).then(() => {
+            try {
+                updateTranslations();
+                const page = document.getElementById('page-configuration');
+                if (page && !page.classList.contains('hidden') && window.configManager && typeof window.configManager.render === 'function') {
+                    window.configManager.render();
+                }
+            } catch (error) {
+                console.error('Failed to update translations after language change:', error);
+            }
+        }).catch((error) => {
+            console.error('Failed to change language:', error);
+        });
+    }
+});
 
 // Export for use in other scripts
 window.i18n = {

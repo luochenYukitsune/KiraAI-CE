@@ -16,7 +16,12 @@ DEFAULT_CONFIG = {
             "path": None
         },
         "framework": {
-            "developer_mode": False
+            "developer_mode": False,
+            "aero_enabled": True,
+            "blur_intensity": 16,
+            "aero_opacity": 0.7,
+            "modal_backdrop_blur_enabled": True,
+            "modal_backdrop_blur_intensity": 8
         }
     },
     "providers": {},
