@@ -172,7 +172,20 @@ window._locale_en = {
         mcp_modal_save: "Save",
         mcp_tools_label: "Tools",
         mcp_add: "Add MCP server",
-        mcp_description_label: "Description"
+        mcp_description_label: "Description",
+        install_modal_title: "Install Plugin",
+        install_tab_upload: "Upload",
+        install_github_url: "Repository URL",
+        install_gh_proxy: "GitHub Proxy (optional)",
+        install_modal_cancel: "Cancel",
+        install_btn: "Install",
+        install_installing: "Installing...",
+        install_url_required: "Repository URL is required",
+        install_no_file: "Please select a .zip file",
+        install_failed: "Installation failed",
+        install_success: "Plugin installed successfully",
+        install_upload_hint: "Drop a .zip file here or click to select",
+        install_upload_reselect: "Click or drag to reselect"
     },
     sticker: {
         title: "Stickers",

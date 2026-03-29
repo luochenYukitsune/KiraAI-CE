@@ -85,7 +85,7 @@ function renderProviderList() {
 // ---------------------------------------------------------------------------
 
 async function openProviderModal() {
-    Modal.show('provider-modal');
+    Modal.show('provider-modal', closeProviderModal);
 
     // Clear form fields
     document.getElementById('provider-name').value = '';
@@ -383,6 +383,8 @@ async function saveProvider() {
         showNotification(getTranslation('model.validation_failed', 'Please fix validation errors before saving'), 'error');
         return;
     }
+    const jsonError = validateConfigContainer(configContainer);
+    if (jsonError) { showNotification(jsonError, 'error'); return; }
     const config = collectConfigFromContainer(configContainer);
 
     try {
@@ -553,6 +555,8 @@ async function saveProviderConfig(providerId) {
         return;
     }
 
+    const jsonError = validateConfigContainer(detailsContainer);
+    if (jsonError) { showNotification(jsonError, 'error'); return; }
     const config = collectConfigFromContainer(detailsContainer);
 
     let name = provider.name;
@@ -707,7 +711,7 @@ async function openModelModal(providerId, modelType, groupLabel, modelId = null,
     modelModalState.modelType = modelType;
     modelModalState.mode = modelId ? 'edit' : 'create';
     modelModalState.modelId = modelId;
-    Modal.show('model-modal');
+    Modal.show('model-modal', closeModelModal);
     const modelIdInput = document.getElementById('model-id');
     const modelIdError = document.getElementById('model-id-error');
     const modelIdHint = document.getElementById('model-id-hint');

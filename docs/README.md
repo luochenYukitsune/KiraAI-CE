@@ -1,16 +1,18 @@
 <div align="center">
 
-# ✨ KiraAI-CE
+# ✨ KiraAI
 
 Light up the digital soul
 
 English | [简体中文](docs/README.zh.md)
 
-[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/) [![Releases](https://img.shields.io/github/v/release/luochenYukitsune/KiraAI-CE)](https://github.com/luochenYukitsune/KiraAI-CE/releases) [![Commit](https://img.shields.io/github/last-commit/luochenYukitsune/KiraAI-CE?color=green)]() [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/luochenYukitsune/KiraAI-CE) [![QQ群](https://custom-icon-badges.demolab.com/badge/QQ群-874381335-00BFFF?style=flat&logo=tencent-qq)](https://qm.qq.com/q/eZBJu9wfFC) [![Discord](https://custom-icon-badges.demolab.com/badge/Discord-KiraAI--CE-00BFFF?style=flat&logo=icons8-discord-48)](https://discord.gg/tPRNggzR)
+[🧭 Documentation](https://docs.kira-ai.top)
+
+[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/) [![Releases](https://img.shields.io/github/v/release/luochenYukitsune/KiraAI-CE)](https://github.com/luochenYukitsune/KiraAI-CE/releases) [![Commit](https://img.shields.io/github/last-commit/luochenYukitsune/KiraAI-CE?color=green)]() [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/luochenYukitsune/KiraAI-CE) [![QQ群](https://custom-icon-badges.demolab.com/badge/QQ群-874381335-00BFFF?style=flat&logo=tencent-qq)](https://qm.qq.com/q/eZBJu9wfFC) [![Discord](https://custom-icon-badges.demolab.com/badge/Discord-KiraAI-00BFFF?style=flat&logo=icons8-discord-48)](https://discord.gg/tPRNggzR)
 
 </div>
 
-KiraAI-CE, a modular, multi-platform AI virtual being that connects Large Language Models (LLMs), and various chat platforms (QQ, Telegram) with a virtual being centered architecture.
+KiraAI, a modular, multi-platform AI virtual being that connects Large Language Models (LLMs), and various chat platforms (QQ, Telegram) with a virtual being centered architecture.
 
 ## 🚀 Features
 - Optimized for anthropomorphic scenarios
@@ -59,10 +61,10 @@ KiraAI-CE, a modular, multi-platform AI virtual being that connects Large Langua
 
 ## 🛠️ Setup
 1. Clone this repository.
-2. Enter KiraAI-CE folder
+2. Enter KiraAI folder
 
 ## ▶️ Run
-You can start KiraAI-CE via (venv):
+You can start KiraAI via (venv):
 - Batch script: `scripts\run.bat`
 - Linux script: `scripts/run.sh` (make executable first)
 
@@ -81,7 +83,7 @@ Run the project & enter webui to configure:
 
 ## 🗂️ Project Structure
 ```
-KiraAI-CE/
+KiraAI/
   core/               # Config/LLM/logging/memory/prompt managers
   data/               # Memory store, stickers and configuration
   scripts/            # Launch scripts
@@ -92,4 +94,4 @@ KiraAI-CE/
 - Check errors printed in system logs on WebUI
 
 ## ✨ Star History
-[![Star History Chart](https://api.star-history.com/svg?repos=luochenYukitsune/KiraAI-CE&type=date&legend=top-left)](https://www.star-history.com/#luochenYukitsune/KiraAI-CE&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=xxynet/KiraAI&type=date&legend=top-left)](https://www.star-history.com/#xxynet/KiraAI&type=date&legend=top-left)

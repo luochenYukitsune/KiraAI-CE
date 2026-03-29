@@ -382,7 +382,7 @@
                 <div id="page-plugin" class="page-content hidden">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-lg font-semibold text-gray-800" data-i18n="plugin.title">Add-ons</h3>
-                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                        <button id="plugin-add-button" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                             </svg>
@@ -657,6 +657,44 @@
             <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
                 <button onclick="closeAdapterModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-i18n="adapter.modal_cancel">Cancel</button>
                 <button onclick="saveAdapter()" class="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors" data-i18n="adapter.modal_save">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Plugin Install Modal -->
+    <div id="plugin-install-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-lg mx-4 flex flex-col" style="max-height: 90vh;">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100" data-i18n="plugin.install_modal_title">Install Plugin</h3>
+                <button onclick="closePluginInstallModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="px-6 py-4 flex-1 overflow-y-auto">
+                <div class="flex space-x-4 mb-4 border-b border-gray-200 dark:border-gray-700">
+                    <button id="install-tab-github-btn" class="px-3 py-2 text-sm font-medium border-b-2 border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-500 focus:outline-none" onclick="switchPluginInstallTab('github')">GitHub</button>
+                    <button id="install-tab-upload-btn" class="px-3 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none" onclick="switchPluginInstallTab('upload')" data-i18n="plugin.install_tab_upload">Upload</button>
+                </div>
+                <div id="install-tab-github">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" data-i18n="plugin.install_github_url">Repository URL</label>
+                        <input type="text" id="install-github-url" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://github.com/user/repo">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" data-i18n="plugin.install_gh_proxy">GitHub Proxy (optional)</label>
+                        <input type="text" id="install-gh-proxy" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://ghproxy.com/">
+                    </div>
+                </div>
+                <div id="install-tab-upload" class="hidden">
+                    <input type="file" id="install-zip-input" accept=".zip" class="hidden">
+                    <div id="install-zip-dropzone"></div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+                <button onclick="closePluginInstallModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-i18n="plugin.install_modal_cancel">Cancel</button>
+                <button id="install-submit-btn" onclick="installPlugin()" class="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors" data-i18n="plugin.install_btn">Install</button>
             </div>
         </div>
     </div>
@@ -936,6 +974,7 @@
     <script src="/static/locales/en/translation.js"></script>
     <script src="/static/locales/zh/translation.js"></script>
     <script src="/static/js/i18n.js"></script>
+    <script src="/static/js/file-dropzone.js"></script>
     <script src="/static/js/image-dropzone.js"></script>
     <!-- Core modules (P1 refactor) -->
     <script src="/static/js/core/notify.js"></script>

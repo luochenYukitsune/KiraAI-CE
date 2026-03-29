@@ -542,6 +542,37 @@ class PluginManager:
         for name in list(_plugin_components.keys()):
             self._cleanup_plugin_registration(name)
 
+    async def uninstall_plugin(self, plugin_id: str) -> None:
+        """
+        Terminate a plugin and remove all its registrations from memory.
+        The caller is responsible for deleting the plugin directory afterwards.
+        """
+        if plugin_id not in _plugin_classes:
+            raise ValueError(f"Plugin '{plugin_id}' is not registered")
+
+        # Stop the running instance and unregister tools / hooks / tags
+        await self.terminate(plugin_id)
+
+        # Remove from global registries
+        _plugin_classes.pop(plugin_id, None)
+        _plugin_manifests.pop(plugin_id, None)
+        _plugin_module_dirs.pop(plugin_id, None)
+        _plugin_module_paths.pop(plugin_id, None)
+        _plugin_schemas.pop(plugin_id, None)
+        _plugin_components.pop(plugin_id, None)
+
+        # Remove module-to-plugin mappings and evict from sys.modules
+        stale_modules = [k for k, v in _module_to_plugin.items() if v == plugin_id]
+        for mod_name in stale_modules:
+            _module_to_plugin.pop(mod_name, None)
+            sys.modules.pop(mod_name, None)
+
+        # Remove enabled state and persist
+        self.plugin_enabled.pop(plugin_id, None)
+        self._save_plugin_state()
+
+        logger.info(f"Plugin '{plugin_id}' uninstalled from memory")
+
     async def reload(self, plugin_id: Optional[str]):
         """
         Reload all plugins or reload a specific plugin
@@ -643,6 +674,81 @@ class PluginManager:
 
             self._register_plugin_class(plugin_id, module, plugin_dir)
 
+    async def load_plugin_from_dir(self, plugin_root: Path) -> Optional[str]:
+        """
+        Dynamically load and initialize a single plugin from the given directory.
+
+        Safe to call at runtime (e.g. after installing a new plugin). If the
+        plugin was already loaded, it is terminated and reloaded cleanly.
+        Returns the plugin_id on success, or None if loading failed.
+        """
+        entry = plugin_root.name
+        if entry.startswith("_") or not plugin_root.is_dir():
+            return None
+
+        plugin_id = self._load_plugin_meta(plugin_root, entry)
+
+        # Ensure the top-level "plugins" package is registered in sys.modules
+        base_package = "plugins"
+        if base_package not in sys.modules:
+            pkg = types.ModuleType(base_package)
+            pkg.__path__ = [str(self.plugin_dir)]
+            sys.modules[base_package] = pkg
+
+        # (Re-)create the sub-package entry so stale cached modules are replaced
+        package_name = f"{base_package}.{entry}"
+        sub_pkg = types.ModuleType(package_name)
+        sub_pkg.__path__ = [str(plugin_root)]
+        sys.modules[package_name] = sub_pkg
+
+        # Locate the entry-point script
+        script_path: Optional[Path] = None
+        module_name: Optional[str] = None
+        for filename, suffix in [("main.py", "main"), ("plugin.py", "plugin")]:
+            candidate = plugin_root / filename
+            if candidate.exists():
+                script_path = candidate
+                module_name = f"{package_name}.{suffix}"
+                break
+        if not script_path:
+            init_path = plugin_root / "__init__.py"
+            if init_path.exists():
+                script_path = init_path
+                module_name = package_name
+
+        if not script_path or not module_name:
+            logger.warning(f"No entry script found in plugin directory: {plugin_root}")
+            return None
+
+        # Clear decorator-registered components so re-import starts fresh
+        if plugin_id in _plugin_components:
+            _plugin_components[plugin_id] = {}
+
+        # Remove stale module from cache so exec_module re-runs the file
+        sys.modules.pop(module_name, None)
+
+        spec = importlib.util.spec_from_file_location(module_name, script_path)
+        if not spec or not spec.loader:
+            logger.warning(f"Failed to create module spec for: {plugin_root}")
+            return None
+
+        try:
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            spec.loader.exec_module(module)
+        except Exception as e:
+            logger.error(f"Error loading plugin from {plugin_root}: {e}")
+            sys.modules.pop(module_name, None)
+            return None
+
+        registered = self._register_plugin_class(plugin_id, module, plugin_root)
+        if not registered:
+            logger.warning(f"No BasePlugin subclass found in {plugin_root}")
+            return None
+
+        await self.init_plugin(plugin_id)
+        return plugin_id
+
     async def _discover_user_plugins(self):
         if not self.plugin_dir.exists():
             return
@@ -656,49 +762,7 @@ class PluginManager:
         for entry in os.listdir(self.plugin_dir):
             if entry.startswith("_"):
                 continue
-
             plugin_root = self.plugin_dir / entry
             if not plugin_root.is_dir():
                 continue
-
-            plugin_id = self._load_plugin_meta(plugin_root, entry)
-
-            package_name = f"{base_package}.{entry}"
-            if package_name not in sys.modules:
-                sub_pkg = types.ModuleType(package_name)
-                sub_pkg.__path__ = [str(plugin_root)]
-                sys.modules[package_name] = sub_pkg
-
-            script_path = None
-            module_name = None
-            main_path = plugin_root / "main.py"
-            plugin_path = plugin_root / "plugin.py"
-            init_path = plugin_root / "__init__.py"
-
-            if main_path.exists():
-                script_path = main_path
-                module_name = f"{package_name}.main"
-            elif plugin_path.exists():
-                script_path = plugin_path
-                module_name = f"{package_name}.plugin"
-            elif init_path.exists():
-                script_path = init_path
-                module_name = package_name
-
-            if not script_path or not module_name:
-                continue
-
-            spec = importlib.util.spec_from_file_location(module_name, script_path)
-            if not spec or not spec.loader:
-                logger.warning(f"Failed to create spec for plugin module in {plugin_root}")
-                continue
-
-            try:
-                module = importlib.util.module_from_spec(spec)
-                sys.modules[module_name] = module
-                spec.loader.exec_module(module)
-            except Exception as e:
-                logger.error(f"Error loading plugin from {plugin_root}: {e}")
-                continue
-
-            self._register_plugin_class(plugin_id, module, plugin_root)
+            await self.load_plugin_from_dir(plugin_root)

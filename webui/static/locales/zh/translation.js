@@ -172,7 +172,20 @@ window._locale_zh = {
         mcp_modal_save: "保存",
         mcp_tools_label: "工具数量",
         mcp_add: "添加 MCP 服务器",
-        mcp_description_label: "描述"
+        mcp_description_label: "描述",
+        install_modal_title: "安装插件",
+        install_tab_upload: "上传",
+        install_github_url: "仓库地址",
+        install_gh_proxy: "GitHub 代理（可选）",
+        install_modal_cancel: "取消",
+        install_btn: "安装",
+        install_installing: "安装中...",
+        install_url_required: "请输入仓库地址",
+        install_no_file: "请选择 .zip 文件",
+        install_failed: "安装失败",
+        install_success: "插件安装成功",
+        install_upload_hint: "拖放 .zip 文件到此处或点击选择",
+        install_upload_reselect: "点击或拖放以重新选择"
     },
     sticker: {
         title: "表情包",

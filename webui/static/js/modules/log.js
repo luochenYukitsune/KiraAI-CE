@@ -282,7 +282,7 @@ function addLogEntry(log) {
     }
 
     // Apply log level filter
-    const currentFilter = AppState.data.logFilter.level;
+    const currentFilter = AppState.data.logFilter.level || 'all';
     if (currentFilter !== 'all') {
         const shouldShow = checkLogLevelMatch(level, currentFilter);
         if (!shouldShow) {
@@ -349,6 +349,9 @@ function addLogEntry(log) {
  * @returns {boolean} - True if the log should be displayed
  */
 function checkLogLevelMatch(logLevel, filterLevel) {
+    if (!logLevel || !filterLevel) {
+        return true;
+    }
     const upperLogLevel = logLevel.toUpperCase();
     const upperFilterLevel = filterLevel.toUpperCase();
 

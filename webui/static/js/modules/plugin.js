@@ -63,6 +63,16 @@ function renderPluginList() {
     const plugins = AppState.data.plugins || [];
     if (!plugins.length) {
         container.innerHTML = `
+            <div class="flex items-center justify-start mb-4">
+                <button
+                    type="button"
+                    id="plugin-add-button"
+                    class="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                    <span class="mr-1">+</span>
+                    <span data-i18n="plugin.install_add">Install Plugin</span>
+                </button>
+            </div>
             <div class="flex justify-center items-center py-12">
                 <div class="text-center">
                     <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,6 +82,7 @@ function renderPluginList() {
                 </div>
             </div>
         `;
+        attachPluginToggleHandlers();
         if (window.i18n) {
             updateTranslations();
         }
@@ -146,6 +157,7 @@ function renderPluginList() {
                             type="button"
                             class="px-3 py-1.5 text-xs font-medium rounded-md border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-900/30"
                             data-i18n="plugin.uninstall"
+                            onclick="deletePlugin('${escapeHtml(String(id))}')"
                         >
                             Uninstall
                         </button>
@@ -155,6 +167,16 @@ function renderPluginList() {
         `;
     }).join('');
     container.innerHTML = `
+        <div class="flex items-center justify-start mb-4">
+            <button
+                type="button"
+                id="plugin-add-button"
+                class="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+                <span class="mr-1">+</span>
+                <span data-i18n="plugin.install_add">Install Plugin</span>
+            </button>
+        </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
             ${cards}
         </div>
@@ -463,26 +485,32 @@ function attachMcpHandlers() {
         });
     });
     container.querySelectorAll('button[data-mcp-delete-id]').forEach((btn) => {
-        btn.addEventListener('click', async (e) => {
+        btn.addEventListener('click', (e) => {
             e.preventDefault();
             const serverId = btn.getAttribute('data-mcp-delete-id') || '';
             if (!serverId) {
                 return;
             }
-            try {
-                const response = await apiCall(`/api/mcp-servers/${encodeURIComponent(serverId)}`, {
-                    method: 'DELETE'
-                });
-                if (!response.ok) {
-                    throw new Error(`Failed to delete MCP server: ${response.status}`);
+            const title = window.i18n ? window.i18n.t('plugin.mcp_delete_confirm_title') : 'Delete MCP Server';
+            const message = window.i18n ? window.i18n.t('plugin.mcp_delete_confirm_message') : 'Are you sure you want to delete this MCP server? This action cannot be undone.';
+            openDeleteModal(title, message, async () => {
+                try {
+                    const response = await apiCall(`/api/mcp-servers/${encodeURIComponent(serverId)}`, {
+                        method: 'DELETE'
+                    });
+                    if (!response.ok) {
+                        throw new Error(`Failed to delete MCP server: ${response.status}`);
+                    }
+                    AppState.data.mcpServers = (AppState.data.mcpServers || []).filter(s => s.id !== serverId);
+                    closeDeleteModal();
+                    renderMcpServers();
+                    showNotification(window.i18n ? window.i18n.t('plugin.mcp_delete_success') : 'MCP server deleted', 'success');
+                } catch (error) {
+                    console.error('Error deleting MCP server:', error);
+                    showNotification(window.i18n ? window.i18n.t('plugin.mcp_delete_error') : 'Failed to delete MCP server', 'error');
+                    closeDeleteModal();
                 }
-                AppState.data.mcpServers = (AppState.data.mcpServers || []).filter(s => s.id !== serverId);
-                renderMcpServers();
-                showNotification(window.i18n ? window.i18n.t('plugin.mcp_delete_success') : 'MCP server deleted', 'success');
-            } catch (error) {
-                console.error('Error deleting MCP server:', error);
-                showNotification(window.i18n ? window.i18n.t('plugin.mcp_delete_error') : 'Failed to delete MCP server', 'error');
-            }
+            });
         });
     });
 }
@@ -492,6 +520,13 @@ function attachPluginToggleHandlers() {
     const container = document.getElementById('plugin-list');
     if (!container) {
         return;
+    }
+    const addButton = document.getElementById('plugin-add-button');
+    if (addButton) {
+        addButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            openPluginInstallModal();
+        });
     }
     container.querySelectorAll('button[data-plugin-id]').forEach((btn) => {
         btn.addEventListener('click', (e) => {
@@ -531,7 +566,7 @@ async function openPluginConfigModal(pluginId) {
         titleElement.textContent = plugin.name || plugin.id || '';
     }
     container.innerHTML = '';
-    Modal.show('plugin-config-modal');
+    Modal.show('plugin-config-modal', closePluginConfigModal);
     try {
         const response = await apiCall(`/api/plugins/${encodeURIComponent(pluginId)}/config`);
         if (!response.ok) {
@@ -561,6 +596,18 @@ async function savePluginConfig() {
         return;
     }
     const container = document.getElementById('plugin-config-container');
+    let hasValidationError = false;
+    if (container) {
+        container.querySelectorAll('input[data-config-key]').forEach(input => {
+            if (!validateConfigFieldInput(input)) hasValidationError = true;
+        });
+    }
+    if (hasValidationError) {
+        showNotification(getTranslation('model.validation_failed', 'Please fix validation errors before saving'), 'error');
+        return;
+    }
+    const jsonError = validateConfigContainer(container);
+    if (jsonError) { showNotification(jsonError, 'error'); return; }
     const config = collectConfigFromContainer(container);
     try {
         const response = await apiCall(`/api/plugins/${encodeURIComponent(PluginConfigModalState.pluginId)}/config`, {
@@ -568,14 +615,172 @@ async function savePluginConfig() {
             body: JSON.stringify({ config: config })
         });
         if (!response.ok) {
-            showNotification('Failed to save plugin config', 'error');
+            showNotification(window.i18n ? window.i18n.t('plugin.config_save_failed') : 'Failed to save plugin config', 'error');
             return;
         }
         closePluginConfigModal();
-        showNotification('Plugin configuration saved', 'success');
+        showNotification(window.i18n ? window.i18n.t('plugin.config_saved') : 'Plugin configuration saved', 'success');
     } catch (error) {
         console.error('Error saving plugin config:', error);
-        showNotification('Failed to save plugin config', 'error');
+        showNotification(window.i18n ? window.i18n.t('plugin.config_save_failed') : 'Failed to save plugin config', 'error');
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Plugin delete
+// ---------------------------------------------------------------------------
+
+function deletePlugin(pluginId) {
+    if (!pluginId) return;
+    const title = window.i18n ? window.i18n.t('plugin.delete_confirm_title') : 'Uninstall Plugin';
+    const message = window.i18n ? window.i18n.t('plugin.delete_confirm_message') : 'Are you sure you want to uninstall this plugin? The plugin files will be permanently deleted.';
+    openDeleteModal(title, message, async () => {
+        try {
+            const response = await apiCall(`/api/plugins/${encodeURIComponent(pluginId)}`, { method: 'DELETE' });
+            if (response.ok) {
+                closeDeleteModal();
+                await loadPluginData();
+                showNotification(window.i18n ? window.i18n.t('plugin.delete_success') : 'Plugin uninstalled successfully', 'success');
+            } else {
+                const data = await response.json().catch(() => ({}));
+                showNotification(data.detail || (window.i18n ? window.i18n.t('plugin.delete_failed') : 'Failed to uninstall plugin'), 'error');
+                closeDeleteModal();
+            }
+        } catch (error) {
+            console.error('Error deleting plugin:', error);
+            showNotification(window.i18n ? window.i18n.t('plugin.delete_failed') : 'Failed to uninstall plugin', 'error');
+            closeDeleteModal();
+        }
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Plugin install modal
+// ---------------------------------------------------------------------------
+
+const PluginInstallModalState = { tab: 'github', installing: false };
+
+function openPluginInstallModal() {
+    const urlInput = document.getElementById('install-github-url');
+    const proxyInput = document.getElementById('install-gh-proxy');
+    const btn = document.getElementById('install-submit-btn');
+    if (urlInput) urlInput.value = '';
+    if (proxyInput) proxyInput.value = '';
+    if (btn) {
+        btn.disabled = false;
+        btn.setAttribute('data-i18n', 'plugin.install_btn');
+        if (window.i18n) btn.textContent = window.i18n.t('plugin.install_btn');
+        else btn.textContent = 'Install';
+    }
+    PluginInstallModalState.installing = false;
+    if (!_zipDropzone) {
+        _zipDropzone = new FileDropzone('install-zip-dropzone', {
+            inputId: 'install-zip-input',
+            titleKey: 'plugin.install_upload_hint',
+            titleFallback: 'Drop a .zip file here or click to select',
+            reselectKey: 'plugin.install_upload_reselect',
+            reselectFallback: 'Click or drag to reselect',
+        });
+    } else {
+        _zipDropzone.reset();
+    }
+    switchPluginInstallTab('github');
+    Modal.show('plugin-install-modal', closePluginInstallModal);
+}
+
+function closePluginInstallModal() {
+    Modal.hide('plugin-install-modal', () => {
+        PluginInstallModalState.tab = 'github';
+        PluginInstallModalState.installing = false;
+    });
+}
+
+function switchPluginInstallTab(tab) {
+    PluginInstallModalState.tab = tab;
+    const githubContent = document.getElementById('install-tab-github');
+    const uploadContent = document.getElementById('install-tab-upload');
+    const githubBtn = document.getElementById('install-tab-github-btn');
+    const uploadBtn = document.getElementById('install-tab-upload-btn');
+    const activeClasses = ['border-blue-600', 'dark:border-blue-500', 'text-blue-600', 'dark:text-blue-500'];
+    const inactiveClasses = ['border-transparent', 'text-gray-500', 'dark:text-gray-400'];
+    if (tab === 'github') {
+        if (githubContent) githubContent.classList.remove('hidden');
+        if (uploadContent) uploadContent.classList.add('hidden');
+        if (githubBtn) { githubBtn.classList.add(...activeClasses); githubBtn.classList.remove(...inactiveClasses); }
+        if (uploadBtn) { uploadBtn.classList.remove(...activeClasses); uploadBtn.classList.add(...inactiveClasses); }
+    } else {
+        if (githubContent) githubContent.classList.add('hidden');
+        if (uploadContent) uploadContent.classList.remove('hidden');
+        if (uploadBtn) { uploadBtn.classList.add(...activeClasses); uploadBtn.classList.remove(...inactiveClasses); }
+        if (githubBtn) { githubBtn.classList.remove(...activeClasses); githubBtn.classList.add(...inactiveClasses); }
+    }
+}
+
+let _zipDropzone = null;
+
+async function installPlugin() {
+    if (PluginInstallModalState.installing) return;
+    const btn = document.getElementById('install-submit-btn');
+    const setLoading = (loading) => {
+        PluginInstallModalState.installing = loading;
+        if (!btn) return;
+        btn.disabled = loading;
+        btn.removeAttribute('data-i18n');
+        if (loading) {
+            btn.textContent = window.i18n ? window.i18n.t('plugin.install_installing') : 'Installing...';
+        } else {
+            btn.setAttribute('data-i18n', 'plugin.install_btn');
+            btn.textContent = window.i18n ? window.i18n.t('plugin.install_btn') : 'Install';
+        }
+    };
+    setLoading(true);
+    try {
+        let response;
+        if (PluginInstallModalState.tab === 'github') {
+            const repoUrl = (document.getElementById('install-github-url')?.value || '').trim();
+            const ghProxy = (document.getElementById('install-gh-proxy')?.value || '').trim();
+            if (!repoUrl) {
+                showNotification(window.i18n ? window.i18n.t('plugin.install_url_required') : 'Repository URL is required', 'error');
+                setLoading(false);
+                return;
+            }
+            response = await apiCall('/api/plugins/install/github', {
+                method: 'POST',
+                body: JSON.stringify({ repo_url: repoUrl, gh_proxy: ghProxy || null })
+            });
+        } else {
+            const zipFile = _zipDropzone?.getFile();
+            if (!zipFile) {
+                showNotification(window.i18n ? window.i18n.t('plugin.install_no_file') : 'Please select a .zip file', 'error');
+                setLoading(false);
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', zipFile);
+            response = await apiCall('/api/plugins/install/upload', {
+                method: 'POST',
+                body: formData
+            });
+        }
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            const msg = data.detail || `HTTP ${response.status}`;
+            showNotification(`${window.i18n ? window.i18n.t('plugin.install_failed') : 'Installation failed'}: ${msg}`, 'error');
+            setLoading(false);
+            return;
+        }
+        const result = await response.json();
+        closePluginInstallModal();
+        await loadPluginData();
+        if (result.warnings && result.warnings.length) {
+            showNotification(`${window.i18n ? window.i18n.t('plugin.install_warning') : 'Installed with warnings'}: ${result.warnings.join('; ')}`, 'warning');
+        } else {
+            showNotification(window.i18n ? window.i18n.t('plugin.install_success') : 'Plugin installed successfully', 'success');
+        }
+    } catch (error) {
+        console.error('Error installing plugin:', error);
+        showNotification(window.i18n ? window.i18n.t('plugin.install_failed') : 'Installation failed', 'error');
+        setLoading(false);
     }
 }
 
@@ -619,7 +824,7 @@ async function openMcpConfigEditor(serverId) {
             bracketPairColorization: { enabled: true },
         });
 
-        Modal.show('mcp-config-modal');
+        Modal.show('mcp-config-modal', closeMcpConfigModal);
     } catch (error) {
         console.error('Error loading MCP config:', error);
         showNotification('Failed to load MCP config', 'error');
