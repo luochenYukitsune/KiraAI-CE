@@ -30,21 +30,20 @@ from .napcat_client import NapCatWebSocketClient, QQMessageChain, QQMessageType
 
 
 def extract_card_info(card_json: str) -> str:
-    card_json = json.loads(card_json)
-    detail = card_json.get("meta", {}).get("detail_1", {})
-    card_json_dic = {
-        "title": detail.get("title", ""),
-        "desc": detail.get("desc", ""),
-        # "icon": detail.get("icon", ""),
-        # "preview": detail.get("preview", ""),
-        # "url": detail.get("url", ""),
-        # "qqdocurl": detail.get("qqdocurl", ""),
-        "appid": detail.get("appid", ""),
-        "nick": detail.get("host", {}).get("nick", ""),
-        "prompt": card_json.get("prompt", ""),
-        "app": card_json.get("app", "")
-    }
-    return json.dumps(card_json_dic, ensure_ascii=False)
+    try:
+        card_json = json.loads(card_json)
+        detail = card_json.get("meta", {}).get("detail_1", {})
+        card_json_dic = {
+            "title": detail.get("title", ""),
+            "desc": detail.get("desc", ""),
+            "appid": detail.get("appid", ""),
+            "nick": detail.get("host", {}).get("nick", ""),
+            "prompt": card_json.get("prompt", ""),
+            "app": card_json.get("app", "")
+        }
+        return json.dumps(card_json_dic, ensure_ascii=False)
+    except (json.JSONDecodeError, TypeError, KeyError) as e:
+        return f"[Card parse error: {e}]"
 
 
 class QQAdapter(IMAdapter):
@@ -405,10 +404,15 @@ class QQAdapter(IMAdapter):
                 message_content.append(Text(ele.get("data").get("text")))
             elif ele.get("type") == "at":
                 at_obj = At(str(ele.get("data").get("qq")))
-                if str(ele.get("data").get("qq")) != "all":
-                    at_user_info = await self.bot.get_user_info(user_id=str(ele.get("data").get("qq")))
-                    at_nickname = at_user_info["data"]["nickname"]
-                    at_obj.nickname = at_nickname
+                at_qq = str(ele.get("data").get("qq"))
+                if at_qq != "all":
+                    try:
+                        at_user_info = await self.bot.get_user_info(user_id=at_qq)
+                        if at_user_info and at_user_info.get("data"):
+                            at_nickname = at_user_info["data"].get("nickname", at_qq)
+                            at_obj.nickname = at_nickname
+                    except Exception as e:
+                        self.logger.warning(f"Failed to get user info for {at_qq}: {e}")
                 message_content.append(at_obj)
             elif ele.get("type") == "reply":
                 reply_content = await self.bot.get_msg(ele.get("data").get("id"))

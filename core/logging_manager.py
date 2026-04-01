@@ -43,7 +43,7 @@ class LogCacheManager:
             "message": message,
             "color": color
         })
-        
+
         # Send to all queues
         for que in self.queues:
             try:
@@ -82,16 +82,16 @@ def set_developer_mode(enabled: bool):
     """Set developer mode to control log levels"""
     global _developer_mode_enabled
     _developer_mode_enabled = enabled
-    
+
     level = logging.DEBUG if enabled else logging.INFO
-    
+
     for name in _created_by_get_logger:
         logger = logging.getLogger(name)
         for handler in logger.handlers:
             if isinstance(handler, logging.StreamHandler) and not isinstance(handler, LogQueueHandler):
                 if not isinstance(handler, RotatingFileHandler):
                     handler.setLevel(level)
-    
+
     logger_name = "logging_manager"
     if logger_name in _created_by_get_logger:
         logger = logging.getLogger(logger_name)

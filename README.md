@@ -1,6 +1,6 @@
 <div align="center">
 
-# ✨ KiraAI-CE
+# ✨ KiraAI
 
 Light up the digital soul
 
@@ -61,10 +61,10 @@ KiraAI, a modular, multi-platform AI virtual being that connects Large Language 
 
 ## 🛠️ Setup
 1. Clone this repository.
-2. Enter KiraAI-CE folder
+2. Enter KiraAI folder
 
 ## ▶️ Run
-You can start KiraAI-CE via (venv):
+You can start KiraAI via (venv):
 - Batch script: `scripts\run.bat`
 - Linux script: `scripts/run.sh` (make executable first)
 
@@ -83,7 +83,7 @@ Run the project & enter webui to configure:
 
 ## 🗂️ Project Structure
 ```
-KiraAI-CE/
+KiraAI/
   core/               # Config/LLM/logging/memory/prompt managers
   data/               # Memory store, stickers and configuration
   scripts/            # Launch scripts

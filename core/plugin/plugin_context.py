@@ -69,7 +69,7 @@ class PluginContext:
     def get_buffer(self, sid: str):
         buffer = self.message_processor.session_buffer.get_buffer(sid)
         return buffer
-    
+
     async def flush_session_messages(self, sid: str):
         await self.message_processor.flush_session_messages(sid)
 
@@ -102,7 +102,7 @@ class PluginContext:
             provider_id = parts[0]
             model_id = ":".join(parts[1:])
             client = self.provider_mgr.get_model_client(provider_id, model_id)
-        except:
+        except (ValueError, IndexError, KeyError):
             return
         if isinstance(client, LLMModelClient):
             return client
@@ -124,7 +124,7 @@ class PluginContext:
             provider_id = parts[0]
             model_id = ":".join(parts[1:])
             client = self.provider_mgr.get_model_client(provider_id, model_id)
-        except:
+        except (ValueError, IndexError, KeyError):
             return
         if isinstance(client, EmbeddingModelClient):
             return client

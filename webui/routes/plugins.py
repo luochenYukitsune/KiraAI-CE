@@ -1,3 +1,10 @@
+"""
+Plugins Routes Module.
+
+This module provides API endpoints for managing plugins,
+including listing, configuration, installation, and deletion.
+"""
+
 import shutil
 from typing import Any, Dict, List, Optional
 
@@ -14,6 +21,13 @@ logger = get_logger("webui", "blue")
 
 
 class PluginsRoutes(Routes):
+    """
+    Routes for plugin management.
+
+    Provides endpoints for listing, configuring, installing,
+    and deleting plugins.
+    """
+
     def get_routes(self):
         return [
             RouteDefinition(
@@ -144,7 +158,8 @@ class PluginsRoutes(Routes):
             raise HTTPException(status_code=503, detail="Plugin manager not available")
         try:
             enabled = bool(payload.get("enabled"))
-        except Exception:
+        except (TypeError, AttributeError) as e:
+            logger.error(f"Invalid payload for set_plugin_enabled: {e}")
             raise HTTPException(status_code=400, detail="Invalid payload")
         try:
             plugin_manager = self.lifecycle.plugin_manager

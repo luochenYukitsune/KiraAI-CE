@@ -10,12 +10,12 @@ class SearchPlugin(BasePlugin):
     """
     Search plugin that provides internet search capability via Tavily
     """
-    
+
     def __init__(self, ctx, cfg: dict):
         super().__init__(ctx, cfg)
         self._key = None
         self.available = True
-    
+
     async def initialize(self):
         """
         Initialize the search plugin
@@ -29,7 +29,7 @@ class SearchPlugin(BasePlugin):
         if not self._key:
             logger.warning("Tavily API key not found. Please configure it in plugin config")
             self.available = False
-    
+
     async def terminate(self):
         """
         Cleanup when plugin is terminated

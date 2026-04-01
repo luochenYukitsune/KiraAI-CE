@@ -207,12 +207,12 @@ class AsyncTempMonitor:
 
     async def start_monitoring(self):
         """Start asynchronous monitoring"""
-        logger.info("="*60)
+        logger.info("=" * 60)
         logger.info(f"Starting monitoring folder: {self.folder_path}")
         logger.info(f"Max size: {self.max_size_bytes / 1024 / 1024:.2f}MB")
         logger.info(f"File protection period: {self.file_protection_seconds} seconds")
         logger.info(f"Check interval: {self.check_interval} seconds")
-        logger.info("="*60)
+        logger.info("=" * 60)
 
         # Build cache
         await self._build_cache()

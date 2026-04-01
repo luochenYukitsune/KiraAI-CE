@@ -1,3 +1,10 @@
+"""
+Overview Routes Module.
+
+This module provides API endpoints for system overview and statistics,
+including adapter counts, provider status, and system metrics.
+"""
+
 import os
 import time
 
@@ -13,6 +20,13 @@ logger = get_logger("webui", "blue")
 
 
 class OverviewRoutes(Routes):
+    """
+    Routes for system overview and statistics.
+
+    Provides endpoints for retrieving system status, adapter counts,
+    provider information, and memory usage metrics.
+    """
+
     def get_routes(self):
         return [
             RouteDefinition(
@@ -26,6 +40,21 @@ class OverviewRoutes(Routes):
         ]
 
     async def get_overview(self):
+        """
+        Get system overview statistics.
+
+        Returns:
+            OverviewResponse containing:
+            - total_adapters: Total configured adapters
+            - active_adapters: Currently running adapters
+            - total_providers: Total configured providers
+            - active_providers: Currently active providers
+            - total_messages: Total messages processed
+            - system_status: Current system status
+            - runtime_duration: Uptime in seconds
+            - memory_usage: Current memory usage in MB
+            - total_memory: Total system memory in MB
+        """
         runtime_duration = 0
         if self.lifecycle and self.lifecycle.stats:
             started_ts = self.lifecycle.stats.get_stats("started_ts")

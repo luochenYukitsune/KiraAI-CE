@@ -358,7 +358,7 @@ class Image(BaseMediaElement):
         if self.image and os.path.exists(self.image):
             with open(self.image, "rb") as f:
                 data = f.read()
-            h = hashlib.new("md5")
+            h = hashlib.new("md5", usedforsecurity=False)
             h.update(data)
             md5 = h.hexdigest()
             self.md5 = md5
@@ -367,7 +367,7 @@ class Image(BaseMediaElement):
 
     async def _hash_image_from_url(self):
         image_data = await get_file_content(self.image)
-        h = hashlib.new("md5")
+        h = hashlib.new("md5", usedforsecurity=False)
         h.update(image_data)
         md5 = h.hexdigest()
         self.md5 = md5
@@ -383,7 +383,7 @@ class Image(BaseMediaElement):
             b64_str = b64_str.split(",")[1]
         self.image = b64_str
         image_bytes = base64.b64decode(b64_str)
-        h = hashlib.new("md5")
+        h = hashlib.new("md5", usedforsecurity=False)
         h.update(image_bytes)
         md5 = h.hexdigest()
         self.md5 = md5

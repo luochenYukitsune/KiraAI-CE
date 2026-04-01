@@ -41,11 +41,8 @@ class BaseConfigField:
             "default": self.default,
             "hint": self.hint,
         }
-        if isinstance(self, EnumField):
+        if isinstance(self, EnumField) and getattr(self, "options", None):
             data["options"] = list(self.options)
-        if isinstance(self, EnumField):
-            if getattr(self, "options", None):
-                data["options"] = list(self.options)
         if isinstance(self, EditorField) and getattr(self, "language", None):
             data["language"] = self.language
         if isinstance(self, ModelSelectField) and getattr(self, "model_type", None):

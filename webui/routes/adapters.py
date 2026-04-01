@@ -1,3 +1,10 @@
+"""
+Adapters Routes Module.
+
+This module provides API endpoints for managing platform adapters,
+including CRUD operations and schema retrieval.
+"""
+
 from typing import Dict, List
 
 from fastapi import Depends, HTTPException, status
@@ -13,6 +20,13 @@ logger = get_logger("webui", "blue")
 
 
 class AdaptersRoutes(Routes):
+    """
+    Routes for adapter management.
+
+    Provides endpoints for listing, creating, updating, and deleting
+    platform adapters (QQ, Telegram, Bilibili, etc.).
+    """
+
     def __init__(self, app, lifecycle):
         super().__init__(app, lifecycle)
         self._adapters: Dict[str, AdapterResponse] = {}

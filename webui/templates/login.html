@@ -93,7 +93,7 @@
                 <button
                     type="submit"
                     id="login-button"
-                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-[#2563eb] hover:bg-[#1d4ed8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2563eb] transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-500"
+                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white login-button focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-500"
                 >
                     <span id="login-button-text">Login</span>
                     <svg id="login-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
@@ -128,70 +128,6 @@
             </p>
         </div>
     </div>
-
-    <!-- Light Spots Styles -->
-    <style>
-        .light-spot {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.6;
-            animation: float 8s ease-in-out infinite;
-        }
-
-        .light-spot-1 {
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%);
-            top: 10%;
-            left: 10%;
-            animation-delay: 0s;
-        }
-
-        .light-spot-2 {
-            width: 250px;
-            height: 250px;
-            background: radial-gradient(circle, rgba(147, 197, 253, 0.4) 0%, transparent 70%);
-            top: 60%;
-            right: 15%;
-            animation-delay: 2s;
-        }
-
-        .light-spot-3 {
-            width: 200px;
-            height: 200px;
-            background: radial-gradient(circle, rgba(167, 139, 250, 0.4) 0%, transparent 70%);
-            bottom: 15%;
-            left: 25%;
-            animation-delay: 4s;
-        }
-
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0) scale(1);
-            }
-            50% {
-                transform: translateY(-20px) scale(1.05);
-            }
-        }
-
-        /* Dark mode light spots */
-        .dark .light-spot {
-            opacity: 0.3;
-        }
-
-        .dark .light-spot-1 {
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%);
-        }
-
-        .dark .light-spot-2 {
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%);
-        }
-
-        .dark .light-spot-3 {
-            background: radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%);
-        }
-    </style>
     
     <!-- Login Script -->
     <script>

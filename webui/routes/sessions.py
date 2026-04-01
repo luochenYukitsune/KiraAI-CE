@@ -47,14 +47,18 @@ class SessionsRoutes(Routes):
 
         session_keys = list(self.lifecycle.memory_manager.chat_memory.keys())
         sessions = []
+        chat_memory = self.lifecycle.memory_manager.chat_memory
+        
         for session_key in session_keys:
             parts = session_key.split(":")
             if len(parts) < 3:
                 continue
             adapter_name, session_type, session_id = parts[0], parts[1], ":".join(parts[2:])
-            session_meta = self.lifecycle.memory_manager.chat_memory.get(session_key, {})
+            session_meta = chat_memory.get(session_key, {})
             title = session_meta.get("title", "")
             description = session_meta.get("description", "")
+            memory_list = session_meta.get("memory", [])
+            message_count = len(memory_list) if isinstance(memory_list, list) else 0
             sessions.append({
                 "id": session_key,
                 "adapter_name": adapter_name,
@@ -62,7 +66,7 @@ class SessionsRoutes(Routes):
                 "session_id": session_id,
                 "title": title,
                 "description": description,
-                "message_count": self.lifecycle.memory_manager.get_memory_count(session_key),
+                "message_count": message_count,
             })
         return {"sessions": sessions}
 

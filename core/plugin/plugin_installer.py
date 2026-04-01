@@ -149,6 +149,10 @@ async def _extract_and_install(
     is re-raised.
     """
     staging: Optional[Path] = None
+    MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB max file size
+    MAX_TOTAL_SIZE = 500 * 1024 * 1024  # 500MB max total extracted size
+    FORBIDDEN_EXTENSIONS = {'.exe', '.dll', '.so', '.dylib', '.bat', '.cmd', '.sh', '.ps1'}
+    
     try:
         try:
             zf = zipfile.ZipFile(temp_zip)
@@ -157,6 +161,11 @@ async def _extract_and_install(
 
         with zf:
             names = zf.namelist()
+
+            # Security check: prevent path traversal attacks
+            for name in names:
+                if name.startswith('/') or '..' in name:
+                    raise ValueError(f"Security violation: path traversal detected in zip entry: {name}")
 
             # Detect a single wrapping top-level directory (GitHub archive style)
             top_entries = {n.split("/")[0] for n in names if n.split("/")[0]}
@@ -171,20 +180,51 @@ async def _extract_and_install(
             except Exception as e:
                 raise ValueError(f"Failed to parse manifest.json: {e}") from e
 
+            # Validate required manifest fields
+            required_fields = ["plugin_id"]
+            for field in required_fields:
+                if field not in manifest:
+                    raise ValueError(f"manifest.json missing required field: {field}")
+
             plugin_id: str = manifest.get("plugin_id") or preferred_name
             if not plugin_id:
                 raise ValueError(
                     "manifest.json does not contain 'plugin_id' and no name could be inferred"
                 )
 
+            # Validate plugin_id (no path separators or special characters)
+            if '/' in plugin_id or '\\' in plugin_id or '..' in plugin_id:
+                raise ValueError(f"Invalid plugin_id: {plugin_id}")
+
             staging = _temp_dir() / f"extract_{uuid.uuid4().hex[:8]}_{plugin_id}"
             staging.mkdir(parents=True, exist_ok=True)
 
+            total_size = 0
             for item in zf.infolist():
                 rel_path = item.filename[len(prefix):]
                 if not rel_path or rel_path.endswith("/"):
                     continue
+                    
+                # Security check: file size
+                if item.file_size > MAX_FILE_SIZE:
+                    raise ValueError(f"File too large: {rel_path} ({item.file_size} bytes)")
+                total_size += item.file_size
+                if total_size > MAX_TOTAL_SIZE:
+                    raise ValueError(f"Total extracted size exceeds limit ({MAX_TOTAL_SIZE} bytes)")
+                
+                # Security check: forbidden extensions
+                ext = Path(rel_path).suffix.lower()
+                if ext in FORBIDDEN_EXTENSIONS:
+                    raise ValueError(f"Forbidden file type: {rel_path}")
+                
                 target = staging / rel_path
+                
+                # Security check: ensure target is within staging directory
+                try:
+                    target.resolve().relative_to(staging.resolve())
+                except ValueError:
+                    raise ValueError(f"Security violation: attempted to write outside staging directory: {rel_path}")
+                    
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(zf.read(item.filename))
 

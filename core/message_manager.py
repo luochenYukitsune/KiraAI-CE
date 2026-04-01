@@ -1,3 +1,11 @@
+"""
+Message Manager Module.
+
+This module provides the MessageProcessor class for handling all message
+processing logic, including message buffering, LLM interaction, and
+response generation.
+"""
+
 import asyncio
 import time
 from asyncio import Lock
@@ -46,6 +54,15 @@ llm_logger = get_logger("llm", "purple")
 
 
 class SessionBuffer:
+    """
+    Buffer for collecting messages within a session before processing.
+
+    Attributes:
+        buffer: List of buffered messages.
+        lock: Asyncio lock for thread-safe operations.
+        max_count: Maximum number of messages to buffer.
+    """
+
     def __init__(self, max_count: int = None):
         self.buffer: list = []
         self.lock: asyncio.Lock = asyncio.Lock()
@@ -81,6 +98,14 @@ class SessionBuffer:
 
 
 class SessionBufferManager:
+    """
+    Manager for session-specific message buffers.
+
+    Attributes:
+        buffers: Dictionary mapping session IDs to SessionBuffer instances.
+        max_count: Maximum messages per buffer.
+    """
+
     def __init__(self, max_count: int = None):
         self.buffers: dict[str, SessionBuffer] = {}
         self.max_count = max_count
@@ -92,7 +117,28 @@ class SessionBufferManager:
 
 
 class MessageProcessor:
-    """Core message processor, responsible for handling all message sending and receiving logic"""
+    """
+    Core message processor for handling all message sending and receiving logic.
+
+    This class coordinates message buffering, LLM interaction, tool execution,
+    and response generation. It manages the complete message processing pipeline.
+
+    Attributes:
+        kira_config: KiraConfig instance with application settings.
+        bot_config: Bot-specific configuration.
+        max_message_interval: Maximum interval for message buffering.
+        max_buffer_messages: Maximum messages to buffer per session.
+        min_message_delay: Minimum delay between sent messages.
+        max_message_delay: Maximum delay between sent messages.
+        llm_api: LLMClient instance for LLM interactions.
+        message_processing_semaphore: Semaphore for concurrent message handling.
+        memory_manager: SessionManager for conversation history.
+        prompt_manager: PromptManager for generating prompts.
+        provider_mgr: ProviderManager for model access.
+        adapter_mgr: AdapterManager for platform adapters.
+        session_locks: Dictionary of per-session locks.
+        session_buffer: SessionBufferManager for message buffering.
+    """
 
     def __init__(self,
                  kira_config,
@@ -268,7 +314,15 @@ class MessageProcessor:
         return message_str
 
     async def handle_im_message(self, event: KiraMessageEvent):
-        """process im message"""
+        """
+        Process an incoming IM message event.
+
+        Handles message buffering, event handlers, and triggers batch processing
+        based on the event's process_strategy.
+
+        Args:
+            event: The incoming message event to process.
+        """
         logger.info(event.get_log_info())
 
         # decorating event info
@@ -325,6 +379,19 @@ class MessageProcessor:
             return
 
     async def handle_im_batch_message(self, event: KiraMessageBatchEvent):
+        """
+        Process a batch of messages from a session.
+
+        This is the main processing pipeline that:
+        1. Converts messages to text format
+        2. Runs event handlers
+        3. Builds chat environment and prompts
+        4. Executes the agent loop
+        5. Sends responses
+
+        Args:
+            event: The batch message event to process.
+        """
         # Start processing
         sid = event.session.sid
         logger.debug(f"[MessageProcessor] === handle_im_batch_message START ===")

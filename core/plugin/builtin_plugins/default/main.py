@@ -25,10 +25,10 @@ XML_FIX_PROMPT = """\
 class DefaultPlugin(BasePlugin):
     def __init__(self, ctx, cfg: dict):
         super().__init__(ctx, cfg)
-    
+
     async def initialize(self):
         pass
-    
+
     async def terminate(self):
         pass
 

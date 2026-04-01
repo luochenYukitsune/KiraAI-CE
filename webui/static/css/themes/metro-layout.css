@@ -1,0 +1,309 @@
+/**
+ * Metro UI Theme - Layout Styles
+ * Windows Metro Design Language Layout System
+ */
+
+:root[data-theme="metro"] {
+    /* Base Layout */
+    --metro-grid-columns: 12;
+    --metro-grid-gap: 16px;
+    --metro-container-max-width: 1400px;
+    --metro-sidebar-width: 260px;
+    --metro-header-height: 48px;
+    --metro-footer-height: 40px;
+}
+
+/* ========================================
+   Base Container
+   ======================================== */
+
+:root[data-theme="metro"] body {
+    font-family: var(--metro-font-family);
+    font-size: var(--metro-font-size-base);
+    line-height: var(--metro-line-height-normal);
+    color: var(--metro-text-primary);
+    background-color: var(--metro-bg-primary);
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========================================
+   Grid System
+   ======================================== */
+
+:root[data-theme="metro"] .metro-container {
+    width: 100%;
+    max-width: var(--metro-container-max-width);
+    margin: 0 auto;
+    padding-left: var(--metro-spacing-lg);
+    padding-right: var(--metro-spacing-lg);
+}
+
+:root[data-theme="metro"] .metro-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--metro-grid-columns), 1fr);
+    gap: var(--metro-grid-gap);
+}
+
+:root[data-theme="metro"] .metro-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-left: calc(var(--metro-grid-gap) * -0.5);
+    margin-right: calc(var(--metro-grid-gap) * -0.5);
+}
+
+:root[data-theme="metro"] .metro-col {
+    flex: 1;
+    padding-left: calc(var(--metro-grid-gap) * 0.5);
+    padding-right: calc(var(--metro-grid-gap) * 0.5);
+}
+
+/* Column sizes */
+:root[data-theme="metro"] .metro-col-1 { flex: 0 0 8.333%; max-width: 8.333%; }
+:root[data-theme="metro"] .metro-col-2 { flex: 0 0 16.667%; max-width: 16.667%; }
+:root[data-theme="metro"] .metro-col-3 { flex: 0 0 25%; max-width: 25%; }
+:root[data-theme="metro"] .metro-col-4 { flex: 0 0 33.333%; max-width: 33.333%; }
+:root[data-theme="metro"] .metro-col-5 { flex: 0 0 41.667%; max-width: 41.667%; }
+:root[data-theme="metro"] .metro-col-6 { flex: 0 0 50%; max-width: 50%; }
+:root[data-theme="metro"] .metro-col-7 { flex: 0 0 58.333%; max-width: 58.333%; }
+:root[data-theme="metro"] .metro-col-8 { flex: 0 0 66.667%; max-width: 66.667%; }
+:root[data-theme="metro"] .metro-col-9 { flex: 0 0 75%; max-width: 75%; }
+:root[data-theme="metro"] .metro-col-10 { flex: 0 0 83.333%; max-width: 83.333%; }
+:root[data-theme="metro"] .metro-col-11 { flex: 0 0 91.667%; max-width: 91.667%; }
+:root[data-theme="metro"] .metro-col-12 { flex: 0 0 100%; max-width: 100%; }
+
+/* ========================================
+   Page Layout
+   ======================================== */
+
+:root[data-theme="metro"] .page-background {
+    background: var(--metro-bg-primary);
+    animation: none;
+}
+
+/* :root[data-theme="metro"] #app {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 100vh;
+} */
+
+/* ========================================
+   Sidebar Layout
+   ======================================== */
+
+:root[data-theme="metro"] .sidebar-gradient {
+    width: var(--metro-sidebar-width);
+    min-height: 100vh;
+    background: var(--metro-sidebar-bg);
+    border-right: 1px solid var(--metro-sidebar-border);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+:root[data-theme="metro"] .sidebar-gradient h1 {
+    font-family: var(--metro-font-family);
+    font-size: var(--metro-font-size-xl);
+    font-weight: var(--metro-font-weight-semibold);
+    color: var(--metro-text-primary);
+    margin: 0;
+    padding: var(--metro-spacing-lg);
+}
+
+:root[data-theme="metro"] .sidebar-gradient p {
+    font-size: var(--metro-font-size-xs);
+    color: var(--metro-text-secondary);
+    padding: 0 var(--metro-spacing-lg);
+}
+
+/* ========================================
+   Header Layout
+   ======================================== */
+
+:root[data-theme="metro"] header {
+    height: var(--metro-header-height);
+    background: var(--metro-nav-bg);
+    border-bottom: 1px solid var(--metro-border);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    display: flex;
+    align-items: center;
+    padding: 0 var(--metro-spacing-lg);
+}
+
+:root[data-theme="metro"] header h2 {
+    font-family: var(--metro-font-family);
+    font-size: var(--metro-font-size-lg);
+    font-weight: var(--metro-font-weight-semibold);
+    color: var(--metro-text-primary);
+    margin: 0;
+}
+
+/* ========================================
+   Content Layout
+   ======================================== */
+
+:root[data-theme="metro"] .page-content {
+    padding: var(--metro-spacing-xl);
+    animation: none;
+}
+
+:root[data-theme="metro"] .bg-white.rounded-lg.shadow,
+:root[data-theme="metro"] .glass-card {
+    background: var(--metro-card-bg);
+    border: 1px solid var(--metro-card-border);
+    border-radius: var(--metro-radius-none);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* ========================================
+   Tile Layout (Metro Signature)
+   ======================================== */
+
+:root[data-theme="metro"] .metro-tile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--metro-spacing-sm);
+}
+
+:root[data-theme="metro"] .metro-tile {
+    aspect-ratio: 1;
+    background: var(--metro-primary);
+    color: var(--metro-text-inverse);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: var(--metro-spacing-md);
+    cursor: pointer;
+    transition: transform var(--metro-transition-fast), 
+                box-shadow var(--metro-transition-fast);
+}
+
+:root[data-theme="metro"] .metro-tile:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 2px var(--metro-primary);
+}
+
+:root[data-theme="metro"] .metro-tile:active {
+    transform: scale(0.98);
+}
+
+:root[data-theme="metro"] .metro-tile-title {
+    font-size: var(--metro-font-size-sm);
+    font-weight: var(--metro-font-weight-semibold);
+    margin: 0;
+}
+
+:root[data-theme="metro"] .metro-tile-icon {
+    font-size: 32px;
+    margin-bottom: var(--metro-spacing-sm);
+}
+
+/* Wide tile variant */
+:root[data-theme="metro"] .metro-tile-wide {
+    grid-column: span 2;
+    aspect-ratio: 2 / 1;
+}
+
+/* Large tile variant */
+:root[data-theme="metro"] .metro-tile-large {
+    grid-row: span 2;
+    aspect-ratio: 1 / 2;
+}
+
+/* ========================================
+   Panel Layout
+   ======================================== */
+
+:root[data-theme="metro"] .metro-panel {
+    background: var(--metro-surface);
+    border: 1px solid var(--metro-border);
+    border-radius: var(--metro-radius-md);
+    padding: var(--metro-spacing-lg);
+}
+
+:root[data-theme="metro"] .metro-panel-header {
+    font-size: var(--metro-font-size-lg);
+    font-weight: var(--metro-font-weight-semibold);
+    color: var(--metro-text-primary);
+    margin-bottom: var(--metro-spacing-md);
+    padding-bottom: var(--metro-spacing-md);
+    border-bottom: 1px solid var(--metro-border-light);
+}
+
+/* ========================================
+   Stack Layout
+   ======================================== */
+
+:root[data-theme="metro"] .metro-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--metro-spacing-md);
+}
+
+:root[data-theme="metro"] .metro-stack-horizontal {
+    flex-direction: row;
+    align-items: center;
+}
+
+:root[data-theme="metro"] .metro-stack-gap-sm { gap: var(--metro-spacing-sm); }
+:root[data-theme="metro"] .metro-stack-gap-lg { gap: var(--metro-spacing-lg); }
+:root[data-theme="metro"] .metro-stack-gap-xl { gap: var(--metro-spacing-xl); }
+
+/* ========================================
+   Responsive Layout
+   ======================================== */
+
+/* Tablet */
+@media (max-width: 1199px) {
+    :root[data-theme="metro"] .sidebar-gradient {
+        width: 60px;
+        overflow: hidden;
+    }
+    
+    :root[data-theme="metro"] .sidebar-gradient h1,
+    :root[data-theme="metro"] .sidebar-gradient p {
+        display: none;
+    }
+    
+    :root[data-theme="metro"] .metro-tile-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+    :root[data-theme="metro"] .sidebar-gradient {
+        position: fixed;
+        left: -100%;
+        width: var(--metro-sidebar-width);
+        z-index: var(--metro-z-fixed);
+        transition: left var(--metro-transition-slow);
+    }
+    
+    :root[data-theme="metro"] .sidebar-gradient.open {
+        left: 0;
+    }
+    
+    :root[data-theme="metro"] .page-content {
+        padding: var(--metro-spacing-md);
+    }
+    
+    :root[data-theme="metro"] .metro-tile-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+    
+    :root[data-theme="metro"] .metro-tile-wide {
+        grid-column: span 1;
+        aspect-ratio: 1;
+    }
+    
+    :root[data-theme="metro"] .metro-tile-large {
+        grid-row: span 1;
+        aspect-ratio: 1;
+    }
+}

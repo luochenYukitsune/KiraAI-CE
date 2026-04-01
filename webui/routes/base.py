@@ -4,7 +4,6 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 from fastapi import FastAPI
 
 
-
 Handler = Callable[..., Any]
 
 
@@ -59,4 +58,3 @@ class Routes:
             methods=list(route.methods),
             **filtered_options,
         )
-

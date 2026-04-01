@@ -1,12 +1,9 @@
 import asyncio
-import ast
 import json
 import os
-import re
-import time
-import uuid
-from typing import Dict, List, Optional
+from typing import Dict
 from threading import Lock
+from functools import lru_cache
 
 from core.logging_manager import get_logger
 from core.config import KiraConfig
@@ -27,10 +24,17 @@ class MemoryManager:
         self.chat_memory_path = CHAT_MEMORY_PATH
 
         self.memory_lock = Lock()
+        self._async_lock = asyncio.Lock()
+        self._pending_save = False
+        self._save_task: asyncio.Task | None = None
 
         # === 短期记忆 ===
         self.chat_memory = self._load_memory(self.chat_memory_path)
         self._ensure_memory_format()
+
+        # === 缓存 ===
+        self._session_count_cache: Dict[str, int] = {}
+        self._cache_valid = False
 
         logger.info("MemoryManager initialized")
 
@@ -78,8 +82,17 @@ class MemoryManager:
         try:
             with open(path, "w", encoding="utf-8") as f:
                 f.write(json.dumps(memory, indent=4, ensure_ascii=False))
+            self._cache_valid = False
         except Exception as e:
             logger.error(f"Error saving memory to {path}: {e}")
+
+    async def _schedule_save(self, delay: float = 1.0):
+        """延迟保存，减少频繁 I/O"""
+        if self._save_task and not self._save_task.done():
+            return
+        await asyncio.sleep(delay)
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, self._save_memory)
 
     def get_session_info(self, session: str):
         parts = session.split(":", maxsplit=2)
@@ -116,7 +129,12 @@ class MemoryManager:
     def get_memory_count(self, session: str) -> int:
         if session not in self.chat_memory:
             return 0
-        return len(self.chat_memory[session].get("memory", []))
+        if not self._cache_valid:
+            self._session_count_cache.clear()
+            for s, data in self.chat_memory.items():
+                self._session_count_cache[s] = len(data.get("memory", []))
+            self._cache_valid = True
+        return self._session_count_cache.get(session, 0)
 
     def fetch_memory(self, session: str):
         if session not in self.chat_memory:
@@ -156,7 +174,8 @@ class MemoryManager:
             self.chat_memory[session]["memory"].append(new_chunk)
             if len(self.chat_memory[session]["memory"]) > self.max_memory_length:
                 self.chat_memory[session]["memory"] = self.chat_memory[session]["memory"][1:]
-            self._save_memory(self.chat_memory, self.chat_memory_path)
+            self._cache_valid = False
+        self._save_memory(self.chat_memory, self.chat_memory_path)
         logger.info(f"Memory updated for {session}")
 
     def delete_session(self, session: str):

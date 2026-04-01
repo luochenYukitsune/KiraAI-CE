@@ -56,11 +56,16 @@ class LogsRoutes(Routes):
         elif token:
             jwt_token = token
 
-        if jwt_token:
-            try:
-                _verify_jwt_token(jwt_token)
-            except HTTPException:
-                raise
+        if not jwt_token:
+            raise HTTPException(
+                status_code=401,
+                detail="Authentication required for log streaming"
+            )
+
+        try:
+            _verify_jwt_token(jwt_token)
+        except HTTPException:
+            raise
 
         async def event_generator():
             que = log_cache_manager.add_queue()

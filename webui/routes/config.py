@@ -1,3 +1,10 @@
+"""
+Configuration Routes Module.
+
+This module provides API endpoints for managing application configuration,
+including bot settings and model configurations.
+"""
+
 from typing import Dict
 
 from fastapi import Depends, HTTPException
@@ -10,6 +17,13 @@ logger = get_logger("webui", "blue")
 
 
 class ConfigRoutes(Routes):
+    """
+    Routes for configuration management.
+
+    Provides endpoints for retrieving and updating bot configuration
+    and model settings.
+    """
+
     def get_routes(self):
         return [
             RouteDefinition(
@@ -29,6 +43,18 @@ class ConfigRoutes(Routes):
         ]
 
     async def get_configuration(self):
+        """
+        Get current application configuration.
+
+        Returns:
+            Dictionary containing:
+            - configuration: bot_config and models settings
+            - providers: List of configured providers
+            - provider_models: Model configurations per provider
+
+        Raises:
+            HTTPException: If configuration is not available.
+        """
         if not self.lifecycle or not getattr(self.lifecycle, "kira_config", None):
             raise HTTPException(status_code=500, detail="Configuration not available")
         config = self.lifecycle.kira_config
@@ -37,6 +63,9 @@ class ConfigRoutes(Routes):
         providers_config = config.get("providers", {}) or {}
         providers = []
         provider_models: Dict[str, Dict] = {}
+        
+        provider_manager = self.lifecycle.provider_manager if self.lifecycle else None
+        
         for provider_id, provider_cfg in providers_config.items():
             provider_name = (
                 provider_cfg.get("name")
@@ -45,9 +74,9 @@ class ConfigRoutes(Routes):
             )
             providers.append({"id": provider_id, "name": provider_name})
             model_config: Dict = {}
-            if self.lifecycle and self.lifecycle.provider_manager:
+            if provider_manager:
                 try:
-                    models_from_manager = self.lifecycle.provider_manager.get_models(provider_id)
+                    models_from_manager = provider_manager.get_models(provider_id)
                     if models_from_manager:
                         model_config = models_from_manager
                 except Exception as e:
@@ -65,6 +94,18 @@ class ConfigRoutes(Routes):
         }
 
     async def update_configuration(self, payload: Dict):
+        """
+        Update application configuration.
+
+        Args:
+            payload: Dictionary containing bot_config and/or models to update.
+
+        Returns:
+            Dictionary with status and updated configuration.
+
+        Raises:
+            HTTPException: If configuration is not available.
+        """
         if not self.lifecycle or not getattr(self.lifecycle, "kira_config", None):
             raise HTTPException(status_code=500, detail="Configuration not available")
         config = self.lifecycle.kira_config
@@ -74,10 +115,10 @@ class ConfigRoutes(Routes):
         if isinstance(bot_config, dict):
             old_developer_mode = config.get("bot_config", {}).get("framework", {}).get("developer_mode", False)
             new_developer_mode = bot_config.get("framework", {}).get("developer_mode", False)
-            
+
             config["bot_config"] = bot_config
             updated = True
-            
+
             if old_developer_mode != new_developer_mode:
                 set_developer_mode(new_developer_mode)
                 logger.info(f"Developer mode {'enabled' if new_developer_mode else 'disabled'}")

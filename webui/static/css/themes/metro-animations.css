@@ -1,0 +1,415 @@
+/**
+ * Metro UI Theme - Animation Styles
+ * Windows Metro Design Language Animations
+ */
+
+/* ========================================
+   Base Animation Variables
+   ======================================== */
+
+:root[data-theme="metro"] {
+    --metro-ease-out: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --metro-ease-in-out: cubic-bezier(0.42, 0, 0.58, 1);
+    --metro-ease-snap: cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+
+/* ========================================
+   Page Transitions
+   ======================================== */
+
+/* 禁用这个动画，因为它导致页面内容不可见 */
+:root[data-theme="metro"] .page-content {
+    /* animation: metroFadeIn var(--metro-transition-slow) var(--metro-ease-out) both; */
+}
+
+@keyframes metroFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Page slide animation */
+:root[data-theme="metro"] .metro-page-slide-enter {
+    animation: metroSlideIn var(--metro-transition-slow) var(--metro-ease-snap) both;
+}
+
+:root[data-theme="metro"] .metro-page-slide-exit {
+    animation: metroSlideOut var(--metro-transition-slow) var(--metro-ease-snap) both;
+}
+
+@keyframes metroSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes metroSlideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-40px);
+    }
+}
+
+/* ========================================
+   Element Load Animations
+   ======================================== */
+
+:root[data-theme="metro"] .metro-animate-in {
+    animation: metroElementIn var(--metro-transition-normal) var(--metro-ease-out) both;
+}
+
+@keyframes metroElementIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Staggered children animation */
+:root[data-theme="metro"] .metro-stagger-children > * {
+    animation: metroElementIn var(--metro-transition-normal) var(--metro-ease-out) both;
+}
+
+:root[data-theme="metro"] .metro-stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+:root[data-theme="metro"] .metro-stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+:root[data-theme="metro"] .metro-stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+:root[data-theme="metro"] .metro-stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+:root[data-theme="metro"] .metro-stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+:root[data-theme="metro"] .metro-stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+:root[data-theme="metro"] .metro-stagger-children > *:nth-child(7) { animation-delay: 300ms; }
+:root[data-theme="metro"] .metro-stagger-children > *:nth-child(8) { animation-delay: 350ms; }
+:root[data-theme="metro"] .metro-stagger-children > *:nth-child(9) { animation-delay: 400ms; }
+:root[data-theme="metro"] .metro-stagger-children > *:nth-child(10) { animation-delay: 450ms; }
+
+/* ========================================
+   State Change Animations
+   ======================================== */
+
+/* Button Press Animation */
+:root[data-theme="metro"] button:active,
+:root[data-theme="metro"] .metro-btn:active {
+    animation: metroPress var(--metro-transition-fast) var(--metro-ease-snap);
+}
+
+@keyframes metroPress {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.97); }
+    100% { transform: scale(1); }
+}
+
+/* Tile Press Animation */
+:root[data-theme="metro"] .metro-tile:active {
+    animation: metroTilePress var(--metro-transition-fast) var(--metro-ease-snap);
+}
+
+@keyframes metroTilePress {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+/* ========================================
+   Modal Animations
+   ======================================== */
+
+:root[data-theme="metro"] .modal-opening {
+    animation: metroModalIn var(--metro-transition-normal) var(--metro-ease-out) both;
+}
+
+:root[data-theme="metro"] .modal-closing {
+    animation: metroModalOut var(--metro-transition-fast) var(--metro-ease-in-out) both;
+}
+
+@keyframes metroModalIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes metroModalOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+:root[data-theme="metro"] .modal-opening > div:first-child {
+    animation: metroModalPanelIn var(--metro-transition-normal) var(--metro-ease-snap) both;
+}
+
+:root[data-theme="metro"] .modal-closing > div:first-child {
+    animation: metroModalPanelOut var(--metro-transition-fast) var(--metro-ease-in-out) both;
+}
+
+@keyframes metroModalPanelIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes metroModalPanelOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+/* ========================================
+   Dropdown Animations
+   ======================================== */
+
+:root[data-theme="metro"] .custom-select-options.show {
+    animation: metroDropdownIn var(--metro-transition-fast) var(--metro-ease-snap) both;
+}
+
+@keyframes metroDropdownIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ========================================
+   Toast Animations
+   ======================================== */
+
+:root[data-theme="metro"] .toast {
+    animation: metroToastIn var(--metro-transition-normal) var(--metro-ease-snap) both;
+}
+
+@keyframes metroToastIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ========================================
+   Progress Animations
+   ======================================== */
+
+:root[data-theme="metro"] .metro-progress-bar {
+    transition: width var(--metro-transition-normal) var(--metro-ease-out);
+}
+
+/* Indeterminate progress */
+:root[data-theme="metro"] .metro-progress-indeterminate .metro-progress-bar {
+    width: 30% !important;
+    animation: metroProgressIndeterminate 1.5s var(--metro-ease-in-out) infinite;
+}
+
+@keyframes metroProgressIndeterminate {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(400%);
+    }
+}
+
+/* ========================================
+   Loading Spinner
+   ======================================== */
+
+:root[data-theme="metro"] .loading-spinner {
+    border: 3px solid var(--metro-border);
+    border-top: 3px solid var(--metro-primary);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: metroSpin 0.8s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes metroSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Metro dots loader */
+:root[data-theme="metro"] .metro-loader-dots {
+    display: flex;
+    gap: var(--metro-spacing-sm);
+}
+
+:root[data-theme="metro"] .metro-loader-dots span {
+    width: 8px;
+    height: 8px;
+    background-color: var(--metro-primary);
+    animation: metroDotPulse 1.4s var(--metro-ease-in-out) infinite;
+}
+
+:root[data-theme="metro"] .metro-loader-dots span:nth-child(1) { animation-delay: 0s; }
+:root[data-theme="metro"] .metro-loader-dots span:nth-child(2) { animation-delay: 0.2s; }
+:root[data-theme="metro"] .metro-loader-dots span:nth-child(3) { animation-delay: 0.4s; }
+:root[data-theme="metro"] .metro-loader-dots span:nth-child(4) { animation-delay: 0.6s; }
+:root[data-theme="metro"] .metro-loader-dots span:nth-child(5) { animation-delay: 0.8s; }
+
+@keyframes metroDotPulse {
+    0%, 80%, 100% {
+        transform: scale(0.6);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* ========================================
+   Hover Effects
+   ======================================== */
+
+:root[data-theme="metro"] .metro-hover-lift {
+    transition: transform var(--metro-transition-fast) var(--metro-ease-snap),
+                box-shadow var(--metro-transition-fast) var(--metro-ease-snap);
+}
+
+:root[data-theme="metro"] .metro-hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--metro-shadow-md);
+}
+
+:root[data-theme="metro"] .metro-hover-scale {
+    transition: transform var(--metro-transition-fast) var(--metro-ease-snap);
+}
+
+:root[data-theme="metro"] .metro-hover-scale:hover {
+    transform: scale(1.02);
+}
+
+/* ========================================
+   Focus Animations
+   ======================================== */
+
+:root[data-theme="metro"] input:focus,
+:root[data-theme="metro"] select:focus,
+:root[data-theme="metro"] textarea:focus {
+    animation: metroFocusRing var(--metro-transition-fast) var(--metro-ease-out) both;
+}
+
+@keyframes metroFocusRing {
+    from {
+        box-shadow: 0 0 0 0 var(--metro-primary);
+    }
+    to {
+        box-shadow: 0 0 0 1px var(--metro-primary);
+    }
+}
+
+/* ========================================
+   Ripple Effect
+   ======================================== */
+
+:root[data-theme="metro"] .metro-ripple {
+    position: relative;
+    overflow: hidden;
+}
+
+:root[data-theme="metro"] .metro-ripple::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+}
+
+:root[data-theme="metro"] .metro-ripple:active::after {
+    animation: metroRipple var(--metro-transition-normal) var(--metro-ease-out) both;
+}
+
+@keyframes metroRipple {
+    0% {
+        width: 0;
+        height: 0;
+        opacity: 0.5;
+    }
+    100% {
+        width: 200%;
+        height: 200%;
+        opacity: 0;
+    }
+}
+
+/* ========================================
+   Sidebar Animation
+   ======================================== */
+
+:root[data-theme="metro"] .sidebar-gradient {
+    transition: width var(--metro-transition-slow) var(--metro-ease-snap);
+}
+
+/* ========================================
+   Theme Transition
+   ======================================== */
+
+:root[data-theme="metro"] body,
+:root[data-theme="metro"] body * {
+    transition: background-color var(--metro-transition-normal) var(--metro-ease-in-out),
+                border-color var(--metro-transition-normal) var(--metro-ease-in-out),
+                color var(--metro-transition-normal) var(--metro-ease-in-out);
+}
+
+/* Disable transitions during theme change */
+:root[data-theme="metro"].theme-changing * {
+    transition: none !important;
+}
+
+/* ========================================
+   Reduced Motion
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    :root[data-theme="metro"] *,
+    :root[data-theme="metro"] *::before,
+    :root[data-theme="metro"] *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

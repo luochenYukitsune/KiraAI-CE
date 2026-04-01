@@ -1,11 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Callable, Dict, List, Optional, Union, TYPE_CHECKING
+from typing import Callable, Dict, List, Union
 from enum import Enum, auto
-from dataclasses import dataclass, field
-from datetime import datetime
-import uuid
 
 from .statistics import Statistics
 from .logging_manager import get_logger
@@ -143,6 +140,7 @@ class EventBus:
             except Exception as e:
                 self.event_bus_stats["errors"] += 1
                 self.stats.set_stats("event_bus", self.event_bus_stats)
+                self.logger.error(f"Error in consumer loop: {e}")
 
     async def _process_event(self, event):
         """处理单个事件"""
@@ -156,6 +154,7 @@ class EventBus:
                 except Exception as e:
                     self.event_bus_stats["errors"] += 1
                     self.stats.set_stats("event_bus", self.event_bus_stats)
+                    self.logger.error(f"Error in event handler: {e}")
 
     async def dispatch(self):
         """start event bus"""

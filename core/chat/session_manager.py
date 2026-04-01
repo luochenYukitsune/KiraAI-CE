@@ -1,3 +1,10 @@
+"""
+Session Manager Module.
+
+This module provides the SessionManager class for managing chat sessions,
+including conversation history, session metadata, and memory persistence.
+"""
+
 import asyncio
 import json
 import os
@@ -19,6 +26,19 @@ CORE_MEMORY_PATH: str = f"{get_data_path()}/memory/core.txt"
 
 
 class SessionManager:
+    """
+    Manager for chat sessions and conversation memory.
+
+    Handles loading, saving, and updating session data including
+    conversation history, session titles, and metadata.
+
+    Attributes:
+        kira_config: KiraConfig instance containing application settings.
+        max_memory_length: Maximum number of conversation turns to keep.
+        chat_memory_path: Path to the chat memory JSON file.
+        memory_lock: Thread lock for memory operations.
+        chat_memory: Dictionary of session data keyed by session ID.
+    """
 
     def __init__(self, kira_config: KiraConfig):
         self.kira_config = kira_config
@@ -26,14 +46,27 @@ class SessionManager:
         self.chat_memory_path = CHAT_MEMORY_PATH
 
         self.memory_lock = Lock()
+        self._async_lock = asyncio.Lock()
 
         # === Session history ===
         self.chat_memory = self._load_memory(self.chat_memory_path)
         self._ensure_memory_format()
 
+        # === 缓存 ===
+        self._session_count_cache: Dict[str, int] = {}
+        self._cache_valid = False
+
     @staticmethod
     def _load_memory(path: str) -> Dict[str, dict]:
-        """加载会话记忆文件"""
+        """
+        Load memory from a JSON file.
+
+        Args:
+            path: Path to the JSON file.
+
+        Returns:
+            Dictionary of session data, or empty dict if file doesn't exist.
+        """
         if os.path.exists(path):
             try:
                 with open(path, "r", encoding="utf-8") as f:
@@ -87,7 +120,13 @@ class SessionManager:
             self._save_memory()
 
     def _save_memory(self, memory: Dict[str, dict] = None, path: str = None):
-        """保存记忆到文件"""
+        """
+        Save memory to a JSON file.
+
+        Args:
+            memory: Memory dictionary to save, defaults to chat_memory.
+            path: File path to save to, defaults to chat_memory_path.
+        """
         if not memory:
             memory = self.chat_memory
         if not path:
@@ -95,6 +134,7 @@ class SessionManager:
         try:
             with open(path, "w", encoding="utf-8") as f:
                 f.write(json.dumps(memory, indent=4, ensure_ascii=False))
+            self._cache_valid = False
         except Exception as e:
             logger.error(f"Error saving memory to {path}: {e}")
 
@@ -126,7 +166,12 @@ class SessionManager:
     def get_memory_count(self, session: str) -> int:
         if session not in self.chat_memory:
             return 0
-        return len(self.chat_memory[session].get("memory", []))
+        if not self._cache_valid:
+            self._session_count_cache.clear()
+            for s, data in self.chat_memory.items():
+                self._session_count_cache[s] = len(data.get("memory", []))
+            self._cache_valid = True
+        return self._session_count_cache.get(session, 0)
 
     def fetch_memory(self, session: str):
         self._ensure_session_data(session)
@@ -138,16 +183,39 @@ class SessionManager:
         return messages
 
     def read_memory(self, session: str):
+        """
+        Read raw memory chunks for a session.
+
+        Args:
+            session: Session ID.
+
+        Returns:
+            List of memory chunk lists.
+        """
         self._ensure_session_data(session)
         return self.chat_memory[session].get("memory", [])
 
     def write_memory(self, session: str, memory: list[list[dict]]):
+        """
+        Write complete memory for a session.
+
+        Args:
+            session: Session ID.
+            memory: List of memory chunks to write.
+        """
         with self.memory_lock:
             self.chat_memory[session]["memory"] = memory
             self._save_memory(self.chat_memory, self.chat_memory_path)
         logger.info(f"Memory written for {session}")
 
     def update_memory(self, session: str, new_chunk):
+        """
+        Append a new memory chunk to a session.
+
+        Args:
+            session: Session ID.
+            new_chunk: New memory chunk to append.
+        """
         self._ensure_session_data(session)
         with self.memory_lock:
             session_data = self.chat_memory[session]
@@ -156,10 +224,17 @@ class SessionManager:
             session_data["memory"].append(new_chunk)
             if len(session_data["memory"]) > self.max_memory_length:
                 session_data["memory"] = session_data["memory"][-self.max_memory_length:]
-            self._save_memory(self.chat_memory, self.chat_memory_path)
+            self._cache_valid = False
+        self._save_memory(self.chat_memory, self.chat_memory_path)
         logger.info(f"Memory updated for {session}")
 
     def delete_session(self, session: str):
+        """
+        Delete a session and its memory.
+
+        Args:
+            session: Session ID to delete.
+        """
         with self.memory_lock:
             self.chat_memory.pop(session)
             self._save_memory(self.chat_memory, self.chat_memory_path)

@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 from core.plugin import BasePlugin, logger, register_tool as tool
 from core.chat import KiraMessageBatchEvent
@@ -15,19 +16,60 @@ blocked_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg',
                       '.dll', '.so', '.dylib', '.pdf', '.doc', '.docx', '.xls', '.xlsx',
                       '.ppt', '.pptx', '.iso', '.img', '.dmg'}
 
+ALLOWED_BASE_DIRS = {'files', 'temp'}
+
+
+def _validate_path(path: str) -> tuple[bool, str, Path | None]:
+    """
+    Validate file path for security.
+    Returns: (is_valid, error_message, absolute_path)
+    """
+    if not path:
+        return False, "Path cannot be empty", None
+    
+    normalized = os.path.normpath(path).replace('\\', '/')
+    
+    for rp in restricted_paths:
+        if rp.lower() in normalized.lower():
+            return False, "Permission denied: Path contains restricted keywords", None
+    
+    if ".." in normalized:
+        return False, "Permission denied: Path traversal detected", None
+    
+    parts = normalized.split('/')
+    if len(parts) < 2 or parts[0] != 'data' or parts[1] not in ALLOWED_BASE_DIRS:
+        return False, f"Permission denied: Path must start with data/files or data/temp", None
+    
+    rel_path = '/'.join(parts[1:])
+    abs_path = get_data_path() / rel_path
+    
+    try:
+        abs_path_resolved = abs_path.resolve()
+        data_path_resolved = get_data_path().resolve()
+        
+        try:
+            abs_path_resolved.relative_to(data_path_resolved)
+        except ValueError:
+            return False, "Permission denied: Path escapes data directory", None
+            
+    except Exception as e:
+        return False, f"Invalid path: {e}", None
+    
+    return True, "", abs_path
+
 
 class FilePlugin(BasePlugin):
     """
     FilePlugin
     """
-    
+
     def __init__(self, ctx, cfg: dict):
         super().__init__(ctx, cfg)
         self.allowed_sessions = list()
-    
+
     async def initialize(self):
         self.allowed_sessions = self.plugin_cfg.get("allowed_sessions", [])
-    
+
     async def terminate(self):
         pass
 
@@ -48,22 +90,15 @@ class FilePlugin(BasePlugin):
         if event.sid not in self.allowed_sessions:
             return "Permission denied: current session not allowed to access local files"
 
-        for rp in restricted_paths:
-            if rp in path:
-                return "Permission denied: Path contains restricted keywords"
-
-        if "../" in path:
-            return "Permission denied: Path traversal detected"
-
-        if not path.startswith(("data/files", "data/temp")):
-            return "Permission denied: Path must start with data/files or data/temp"
-
         ext = Path(path).suffix.lower()
         if ext in blocked_extensions:
             return "Multimedia and binary files are not allowed"
 
+        is_valid, error_msg, abs_path = _validate_path(path)
+        if not is_valid:
+            return error_msg
+
         try:
-            abs_path = get_data_path() / path.removeprefix("data/")
             with open(abs_path, 'r', encoding="utf-8") as f:
                 file_lines = f.readlines()
             if offset > len(file_lines) or offset < 1:
@@ -91,22 +126,16 @@ class FilePlugin(BasePlugin):
         if event.sid not in self.allowed_sessions:
             return "Permission denied: current session not allowed to access local files"
 
-        for rp in restricted_paths:
-            if rp in path:
-                return "Permission denied: Path contains restricted keywords"
-
-        if "../" in path:
-            return "Permission denied: Path traversal detected"
-
-        if not path.startswith(("data/files", "data/temp")):
-            return "Permission denied: Path must start with data/files or data/temp"
-
         ext = Path(path).suffix.lower()
         if ext in blocked_extensions:
             return "Multimedia and binary files are not allowed"
 
+        is_valid, error_msg, abs_path = _validate_path(path)
+        if not is_valid:
+            return error_msg
+
         try:
-            abs_path = get_data_path() / path.removeprefix("data/")
+            abs_path.parent.mkdir(parents=True, exist_ok=True)
             with open(abs_path, 'w', encoding="utf-8") as f:
                 f.write(content)
             return "File written successfully"
@@ -131,23 +160,15 @@ class FilePlugin(BasePlugin):
         if event.sid not in self.allowed_sessions:
             return "Permission denied: current session not allowed to access local files"
 
-        for rp in restricted_paths:
-            if rp in path:
-                return "Permission denied: Path contains restricted keywords"
-
-        if "../" in path:
-            return "Permission denied: Path traversal detected"
-
-        if not path.startswith(("data/files", "data/temp")):
-            return "Permission denied: Path must start with data/files or data/temp"
-
         ext = Path(path).suffix.lower()
         if ext in blocked_extensions:
             return "Permission denied: Multimedia and binary files are not allowed"
 
-        try:
-            abs_path = get_data_path() / path.removeprefix("data/")
+        is_valid, error_msg, abs_path = _validate_path(path)
+        if not is_valid:
+            return error_msg
 
+        try:
             with open(abs_path, 'r', encoding="utf-8") as f:
                 content = f.read()
 

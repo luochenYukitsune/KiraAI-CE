@@ -1,3 +1,11 @@
+"""
+LLM Client Module.
+
+This module provides the LLMClient class for interacting with various
+LLM providers, including chat completion, tool execution, text-to-speech,
+speech-to-text, and image generation capabilities.
+"""
+
 from __future__ import annotations
 
 from asyncio import Semaphore
@@ -22,6 +30,19 @@ if TYPE_CHECKING:
 
 
 class LLMClient:
+    """
+    LLM Client for managing interactions with language model providers.
+
+    This class handles tool registration, execution, and various LLM
+    operations including chat, TTS, STT, and image generation.
+
+    Attributes:
+        kira_config: KiraConfig instance containing application settings.
+        provider_mgr: ProviderManager instance for accessing LLM providers.
+        tools_definitions: List of registered tool definitions.
+        tools_functions: Dictionary mapping tool names to their functions.
+        llm_semaphore: Semaphore for limiting concurrent LLM requests.
+    """
     def __init__(self, kira_config: KiraConfig, provider_mgr: ProviderManager):
         self.kira_config = kira_config
 
@@ -33,7 +54,15 @@ class LLMClient:
         self.llm_semaphore = Semaphore(2)
 
     def register_tool(self, name, description, parameters, func):
-        """Register a tool"""
+        """
+        Register a tool for LLM function calling.
+
+        Args:
+            name: Unique name for the tool.
+            description: Human-readable description of the tool's purpose.
+            parameters: JSON schema describing the tool's parameters.
+            func: Async function to execute when the tool is called.
+        """
         self.tools_definitions.append({
             "type": "function",
             "function": {
@@ -45,6 +74,12 @@ class LLMClient:
         self.tools_functions[name] = func
 
     def unregister_tool(self, name: str):
+        """
+        Unregister a tool by name.
+
+        Args:
+            name: Name of the tool to unregister.
+        """
         if name in self.tools_functions:
             del self.tools_functions[name]
 
@@ -53,6 +88,17 @@ class LLMClient:
                 del self.tools_definitions[i]
 
     async def execute_tool(self, event: KiraMessageBatchEvent, resp: LLMResponse, tool_set: Optional[ToolSet] = None):
+        """
+        Execute tool calls from an LLM response.
+
+        Args:
+            event: The message batch event that triggered the tool call.
+            resp: LLM response containing tool calls to execute.
+            tool_set: Optional ToolSet containing additional tools.
+
+        Returns:
+            None. Tool results are appended to resp.tool_results.
+        """
         logger.debug(f"[LLMClient] === execute_tool START ===")
         logger.debug(f"[LLMClient] Total tool calls to execute: {len(resp.tool_calls)}")
         for tool_call in resp.tool_calls:

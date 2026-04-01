@@ -1,0 +1,239 @@
+/**
+ * Metro UI Theme - CSS Variables
+ * Windows Metro Design Language Variables
+ */
+
+:root[data-theme="metro"] {
+    /* ===== Windows 8 Signature Colors (16 colors) ===== */
+    --metro-color-blue: #0078D4;
+    --metro-color-dark-green: #107C10;
+    --metro-color-green: #008A17;
+    --metro-color-light-green: #7FBA00;
+    --metro-color-yellow: #FFC40D;
+    --metro-color-orange: #F7630C;
+    --metro-color-dark-red: #E81123;
+    --metro-color-red: #FF4343;
+    --metro-color-magenta: #E3008C;
+    --metro-color-light-purple: #B4009E;
+    --metro-color-purple: #5C2D91;
+    --metro-color-dark-purple: #68768A;
+    --metro-color-indigo: #00188F;
+    --metro-color-blue-gray: #008299;
+    --metro-color-teal-blue: #00B7C3;
+    --metro-color-cyan: #00ABA9;
+    
+    /* ===== Primary Colors ===== */
+    --metro-primary: var(--metro-color-blue);
+    --metro-primary-hover: #106EBE;
+    --metro-primary-active: #005A9E;
+    --metro-primary-light: rgba(0, 120, 212, 0.1);
+    --metro-primary-lighter: rgba(0, 120, 212, 0.05);
+    
+    /* ===== Accent Colors ===== */
+    --metro-accent: #005A9E;
+    --metro-accent-light: #2B88D8;
+    --metro-accent-dark: #004578;
+    
+    /* ===== Status Colors (Windows 8 Standard) ===== */
+    --metro-success: var(--metro-color-dark-green);
+    --metro-success-bg: rgba(16, 124, 16, 0.1);
+    --metro-warning: var(--metro-color-orange);
+    --metro-warning-bg: rgba(247, 99, 12, 0.1);
+    --metro-error: var(--metro-color-dark-red);
+    --metro-error-bg: rgba(232, 17, 35, 0.1);
+    --metro-info: var(--metro-color-blue);
+    --metro-info-bg: rgba(0, 120, 212, 0.1);
+    
+    /* ===== Background Colors ===== */
+    --metro-bg-primary: #F3F3F3;
+    --metro-bg-secondary: #FFFFFF;
+    --metro-bg-tertiary: #E5E5E5;
+    --metro-bg-overlay: rgba(0, 0, 0, 0.4);
+    
+    /* ===== Surface Colors ===== */
+    --metro-surface: #FFFFFF;
+    --metro-surface-hover: #F9F9F9;
+    --metro-surface-active: #EDEBEB;
+    --metro-surface-selected: #F0F0F0;
+    
+    /* ===== Text Colors ===== */
+    --metro-text-primary: #1A1A1A;
+    --metro-text-secondary: #5C5C5C;
+    --metro-text-tertiary: #8A8A8A;
+    --metro-text-disabled: #ABABAB;
+    --metro-text-inverse: #FFFFFF;
+    
+    /* ===== Border Colors ===== */
+    --metro-border: #D1D1D1;
+    --metro-border-light: #E5E5E5;
+    --metro-border-focus: #0078D4;
+    
+    /* ===== Navigation Colors ===== */
+    --metro-nav-bg: #FFFFFF;
+    --metro-nav-text: #1A1A1A;
+    --metro-nav-hover-bg: #F5F5F5;
+    --metro-nav-active-bg: #E5E5E5;
+    --metro-nav-active-text: #0078D4;
+    
+    /* ===== Sidebar Colors ===== */
+    --metro-sidebar-bg: #F3F3F3;
+    --metro-sidebar-border: #E5E5E5;
+    --metro-sidebar-text: #1A1A1A;
+    --metro-sidebar-hover-bg: #E5E5E5;
+    
+    /* ===== Card Colors ===== */
+    --metro-card-bg: #FFFFFF;
+    --metro-card-border: #E5E5E5;
+    --metro-card-shadow: none;
+    
+    /* ===== Input Colors ===== */
+    --metro-input-bg: #FFFFFF;
+    --metro-input-border: #D1D1D1;
+    --metro-input-focus-border: #0078D4;
+    --metro-input-placeholder: #8A8A8A;
+    
+    /* ===== Button Colors ===== */
+    --metro-btn-primary-bg: #0078D4;
+    --metro-btn-primary-hover: #106EBE;
+    --metro-btn-primary-active: #005A9E;
+    --metro-btn-secondary-bg: #E5E5E5;
+    --metro-btn-secondary-hover: #D1D1D1;
+    --metro-btn-secondary-active: #BEBEBE;
+    --metro-btn-text: #1A1A1A;
+    
+    /* ===== Scrollbar Colors ===== */
+    --metro-scrollbar-track: #F3F3F3;
+    --metro-scrollbar-thumb: #C1C1C1;
+    --metro-scrollbar-thumb-hover: #A1A1A1;
+    
+    /* ===== Typography ===== */
+    --metro-font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --metro-font-size-xs: 12px;
+    --metro-font-size-sm: 14px;
+    --metro-font-size-base: 14px;
+    --metro-font-size-lg: 16px;
+    --metro-font-size-xl: 20px;
+    --metro-font-size-2xl: 24px;
+    --metro-font-size-3xl: 34px;
+    
+    --metro-font-weight-regular: 400;
+    --metro-font-weight-semibold: 600;
+    --metro-font-weight-bold: 700;
+    
+    --metro-line-height-tight: 1.2;
+    --metro-line-height-normal: 1.5;
+    --metro-line-height-relaxed: 1.75;
+    
+    /* ===== Spacing ===== */
+    --metro-spacing-xs: 4px;
+    --metro-spacing-sm: 8px;
+    --metro-spacing-md: 12px;
+    --metro-spacing-lg: 16px;
+    --metro-spacing-xl: 24px;
+    --metro-spacing-2xl: 32px;
+    --metro-spacing-3xl: 48px;
+    
+    /* ===== Border Radius ===== */
+    --metro-radius-none: 0;
+    --metro-radius-sm: 2px;
+    --metro-radius-md: 4px;
+    --metro-radius-lg: 8px;
+    
+    /* ===== Shadows ===== */
+    --metro-shadow-sm: none;
+    --metro-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --metro-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+    --metro-shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.15);
+    
+    /* ===== Transitions ===== */
+    --metro-transition-fast: 150ms ease-in-out;
+    --metro-transition-normal: 200ms ease-in-out;
+    --metro-transition-slow: 300ms ease-out;
+    
+    /* ===== Z-Index ===== */
+    --metro-z-dropdown: 1000;
+    --metro-z-sticky: 1020;
+    --metro-z-fixed: 1030;
+    --metro-z-modal-backdrop: 1040;
+    --metro-z-modal: 1050;
+    --metro-z-popover: 1060;
+    --metro-z-tooltip: 1070;
+    
+    /* ===== Override Default Variables ===== */
+    --color-primary: var(--metro-primary);
+    --color-primary-hover: var(--metro-primary-hover);
+    --color-primary-active: var(--metro-primary-active);
+    --color-primary-light: var(--metro-primary-light);
+    
+    --color-text-primary: var(--metro-text-primary);
+    --color-text-secondary: var(--metro-text-secondary);
+    --color-text-muted: var(--metro-text-tertiary);
+    
+    --color-nav-text: var(--metro-nav-text);
+    --color-nav-hover-bg: var(--metro-nav-hover-bg);
+    --color-nav-active-bg: var(--metro-nav-active-bg);
+    --color-nav-active-text: var(--metro-nav-active-text);
+    
+    --color-sidebar-bg: var(--metro-sidebar-bg);
+    --color-sidebar-border: var(--metro-sidebar-border);
+    
+    --color-card-bg: var(--metro-card-bg);
+    --color-card-border: var(--metro-card-border);
+    
+    --color-scrollbar-track: var(--metro-scrollbar-track);
+    --color-scrollbar-thumb: var(--metro-scrollbar-thumb);
+    --color-scrollbar-thumb-hover: var(--metro-scrollbar-thumb-hover);
+    
+    --aero-opacity: 1;
+    --blur-intensity: 0px;
+    --aero-shadow: var(--metro-shadow-sm);
+}
+
+/* Metro UI Dark Theme Variables - Windows 8 Style */
+:root[data-theme="metro"].dark {
+    --metro-bg-primary: #000000;
+    --metro-bg-secondary: #1F1F1F;
+    --metro-bg-tertiary: #2D2D2D;
+    --metro-bg-overlay: rgba(0, 0, 0, 0.7);
+    
+    --metro-surface: #1F1F1F;
+    --metro-surface-hover: #2D2D2D;
+    --metro-surface-active: #3D3D3D;
+    --metro-surface-selected: #2D2D2D;
+    
+    --metro-text-primary: #FFFFFF;
+    --metro-text-secondary: #D5D5D5;
+    --metro-text-tertiary: #A5A5A5;
+    --metro-text-disabled: #757575;
+    
+    --metro-border: #3D3D3D;
+    --metro-border-light: #2D2D2D;
+    
+    --metro-nav-bg: #1F1F1F;
+    --metro-nav-hover-bg: #2D2D2D;
+    --metro-nav-active-bg: #3D3D3D;
+    
+    --metro-sidebar-bg: #000000;
+    --metro-sidebar-border: #2D2D2D;
+    --metro-sidebar-hover-bg: #2D2D2D;
+    
+    --metro-card-bg: #1F1F1F;
+    --metro-card-border: #3D3D3D;
+    
+    --metro-input-bg: #1F1F1F;
+    --metro-input-border: #3D3D3D;
+    --metro-input-placeholder: #757575;
+    
+    --metro-btn-secondary-bg: #3D3D3D;
+    --metro-btn-secondary-hover: #4D4D4D;
+    --metro-btn-secondary-active: #5D5D5D;
+    --metro-btn-text: #FFFFFF;
+    
+    --metro-scrollbar-track: #1F1F1F;
+    --metro-scrollbar-thumb: #4D4D4D;
+    --metro-scrollbar-thumb-hover: #6D6D6D;
+    
+    --metro-shadow-md: none;
+    --metro-shadow-lg: none;
+    --metro-shadow-xl: none;
+}

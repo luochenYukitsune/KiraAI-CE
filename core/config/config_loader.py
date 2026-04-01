@@ -1,3 +1,11 @@
+"""
+Configuration Loader Module.
+
+This module provides the KiraConfig class for loading, saving, and
+managing application configuration, including migration from legacy
+INI format to JSON.
+"""
+
 from typing import Dict, Any, Optional
 import configparser
 import json
@@ -15,11 +23,28 @@ CONFIG_PATH = get_config_path() / "system_config.json"
 
 
 class ConfigError(Exception):
+    """
+    Exception raised for configuration-related errors.
+
+    Attributes:
+        message: Error message describing the configuration issue.
+    """
+
     def __init__(self, message: str = "failed to load KiraAI config"):
         super().__init__(f"ConfigError: {message}")
 
 
 class KiraConfig(dict):
+    """
+    Configuration manager for KiraAI, extending dict for easy access.
+
+    Handles loading configuration from JSON files, migrating from legacy
+    INI format, and saving configuration changes.
+
+    Attributes:
+        default_config: Default configuration values.
+    """
+
     def __init__(self, default_config: Optional[dict] = None):
         super().__init__()
         object.__setattr__(self, "default_config", default_config or DEFAULT_CONFIG)
@@ -27,7 +52,12 @@ class KiraConfig(dict):
         self._load_config()
 
     def _load_config(self):
-        """Load config from JSON or migrate from INI"""
+        """
+        Load configuration from JSON file or migrate from INI.
+
+        Checks for existing JSON config, falls back to INI migration,
+        or creates default configuration.
+        """
         if os.path.exists(CONFIG_PATH):
             self.load_from_json()
         elif self._check_ini_files_exist():
@@ -37,31 +67,40 @@ class KiraConfig(dict):
 
     @staticmethod
     def _check_ini_files_exist() -> bool:
-        return any(os.path.exists(os.path.join("data", "config", f)) 
+        return any(os.path.exists(os.path.join("data", "config", f))
                    for f in ["bot.ini", "adapters.ini"])
 
     def migrate_from_ini(self):
-        """Migrate existing INI files to JSON"""
+        """
+        Migrate existing INI configuration files to JSON format.
+
+        Loads bot.ini and adapters.ini files, converts them to the
+        new JSON structure, and saves the result.
+        """
         logger.info("Migrating configuration from INI to JSON...")
-        
+
         # Load from INI files
         bot_config = self.load_from_ini("data/config/bot.ini")
         ada_config = self.load_from_ini("data/config/adapters.ini", "adapter_name")
-        
+
         # Construct full config structure
         full_config = self.default_config
         full_config["bot_config"] = bot_config
         full_config["adapters"] = ada_config
-        
+
         # Save to JSON
         self.save_to_json(full_config)
 
         self.update(full_config)
-        
+
         self._migrate_adapters_config()
 
     def load_defaults(self):
-        """Load default configuration"""
+        """
+        Load default configuration and save to JSON file.
+
+        Creates a new configuration file with default values.
+        """
         full_config = self.default_config
         self.save_to_json(full_config)
         self.update(full_config)
@@ -93,6 +132,16 @@ class KiraConfig(dict):
             logger.error(f"Failed to save config to JSON: {e}")
 
     def get_config(self, key: str, default: Optional = None):
+        """
+        Get a configuration value using dot notation.
+
+        Args:
+            key: Dot-separated key path (e.g., 'bot_config.bot.name').
+            default: Default value if key is not found.
+
+        Returns:
+            The configuration value or default if not found.
+        """
         keys = key.split(".")
         v = self
         for k in keys:

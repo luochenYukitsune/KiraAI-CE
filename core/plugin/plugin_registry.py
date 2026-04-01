@@ -402,7 +402,7 @@ class PluginManager:
 
         # clean up tool registration
         tools = comp.get("tools", {})
-        if self.ctx and getattr(self.ctx, "llm_api", None):
+        if self.ctx and hasattr(self.ctx, "llm_api") and self.ctx.llm_api is not None:
             for tool_name in list(tools.keys()):
                 try:
                     self.ctx.llm_api.unregister_tool(tool_name)
@@ -412,12 +412,19 @@ class PluginManager:
         # clean up hook registration
         hooks = comp.get("hooks", [])
         for hook in hooks:
-            event_handler_reg.del_handler(hook)
+            try:
+                event_handler_reg.del_handler(hook)
+            except Exception as e:
+                logger.error(f"Failed to unregister hook for plugin {plugin_id}: {e}")
 
         # clean up tag registration
         tags = comp.get("tags", [])
-        for tag in tags:
-            tag_registry.unregister(tag.get("name"))
+        tag_names = [tag.get("name") for tag in tags if tag.get("name")]
+        if tag_names:
+            try:
+                tag_registry.unregister(*tag_names)
+            except Exception as e:
+                logger.error(f"Failed to unregister tags for plugin {plugin_id}: {e}")
 
     def _load_plugin_config_from_file(self, plugin_id: str) -> Dict[str, Any]:
         PLUGIN_CONFIG_DIR.mkdir(parents=True, exist_ok=True)

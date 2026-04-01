@@ -43,15 +43,13 @@ DO NOT use pronouns to refer to anything in the current session, e.g. `这段对
 class SessionPlugin(BasePlugin):
     def __init__(self, ctx, cfg: dict):
         super().__init__(ctx, cfg)
-        self.session_events: dict[str, asyncio.Event] = {}
-        self.session_tasks: dict[str, asyncio.Task] = {}
         bot_cfg = ctx.config["bot_config"].get("bot", {})
         self.debounce_interval = float(bot_cfg.get("max_message_interval", 1.5))
         self.max_buffer_messages = int(bot_cfg.get("max_buffer_messages", 3))
-    
+
     async def initialize(self):
         pass
-    
+
     async def terminate(self):
         """
         Cleanup when plugin is terminated

@@ -1,3 +1,11 @@
+"""
+Agent Executor Module.
+
+This module provides the AgentExecutor class for managing multi-step
+LLM interactions with tool calling capabilities, including execution
+context management and step result tracking.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -19,6 +27,15 @@ llm_logger = get_logger("llm", "purple")
 
 @dataclass
 class AgentExecutionContext:
+    """
+    Context for agent execution containing all necessary components.
+
+    Attributes:
+        event: The message batch event being processed.
+        request: The LLM request to be sent.
+        llm_model: The LLM model client to use.
+        new_memory: NewMemory instance for tracking conversation history.
+    """
     event: KiraMessageBatchEvent
     request: LLMRequest
     llm_model: LLMModelClient
@@ -27,6 +44,18 @@ class AgentExecutionContext:
 
 @dataclass
 class AgentStepResult:
+    """
+    Result of a single agent execution step.
+
+    Attributes:
+        state: Execution state - 'success', 'stopped', or 'error'.
+        step_index: Zero-based index of this step.
+        llm_response: The LLM response from this step, if any.
+        new_memory: Updated memory from this step.
+        is_final: Whether this is the final step.
+        has_tool_calls: Whether the response contains tool calls.
+        err: Error message if state is 'error'.
+    """
     state: Literal["success", "stopped", "error"]
     step_index: int
     llm_response: Optional[LLMResponse]
@@ -38,9 +67,24 @@ class AgentStepResult:
 
 @dataclass
 class NewMemory:
+    """
+    Container for building new conversation memory entries.
+
+    Provides methods for adding user, assistant, and tool messages
+    to the memory list.
+
+    Attributes:
+        memory_list: List of message dictionaries.
+    """
     memory_list: list = field(default_factory=list)
 
     def user(self, content: Union[str, dict]):
+        """
+        Add a user message to memory.
+
+        Args:
+            content: Message content, either a string or dict.
+        """
         self.memory_list.append(
             {
                 "role": "user",
@@ -50,6 +94,14 @@ class NewMemory:
 
     # Add reasoning_content param, defaults to blank string，to satisfy the requirements of Kimi API
     def assistant(self, content: str, tool_calls: Optional[list[dict]] = None, reasoning_content: str = ""):
+        """
+        Add an assistant message to memory.
+
+        Args:
+            content: Text content of the assistant's response.
+            tool_calls: Optional list of tool call dictionaries.
+            reasoning_content: Optional reasoning content (for models like Kimi).
+        """
         if not tool_calls:
             self.memory_list.append(
                 {
@@ -69,6 +121,12 @@ class NewMemory:
             )
 
     def tool(self, tool_results: list[dict]):
+        """
+        Add tool result messages to memory.
+
+        Args:
+            tool_results: List of tool result dictionaries.
+        """
         self.memory_list.extend(tool_results)
          # self.memory_list.append({
         #     "role": "tool",
@@ -79,6 +137,17 @@ class NewMemory:
 
 
 class AgentExecutor:
+    """
+    Agent Executor for managing multi-step LLM conversations with tool calling.
+
+    This class handles the iterative process of LLM calls and tool execution,
+    yielding step results for each iteration.
+
+    Attributes:
+        llm_api: LLMClient instance for making LLM calls.
+        tool_set: Optional ToolSet containing available tools.
+    """
+
     def __init__(self, llm_api: LLMClient, tool_set: Optional[ToolSet] = None):
         self.llm_api = llm_api
         self.tool_set = tool_set
@@ -88,6 +157,16 @@ class AgentExecutor:
         ctx: AgentExecutionContext,
         max_steps: int,
     ) -> AsyncIterator[AgentStepResult]:
+        """
+        Execute the agent loop with a maximum number of steps.
+
+        Args:
+            ctx: Agent execution context containing event, request, and model.
+            max_steps: Maximum number of LLM calls to make.
+
+        Yields:
+            AgentStepResult for each step of execution.
+        """
         event = ctx.event
         request = ctx.request
         llm_model = ctx.llm_model
@@ -129,7 +208,7 @@ class AgentExecutor:
 
             if llm_resp.text_response:
                 logger.debug(f"[AgentExecutor] LLM text response: {llm_resp.text_response[:200]}{'...' if len(llm_resp.text_response) > 200 else ''}")
-            
+
             if llm_resp.reasoning_content:
                 logger.debug(f"[AgentExecutor] Reasoning content length: {len(llm_resp.reasoning_content)}")
 

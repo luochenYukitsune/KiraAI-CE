@@ -141,7 +141,7 @@ class StickersRoutes(Routes):
                 if isinstance(key, str) and key.isdigit():
                     try:
                         numeric_ids.append(int(key))
-                    except Exception:
+                    except (ValueError, TypeError):
                         continue
             next_id = max(numeric_ids) + 1 if numeric_ids else 1
             sid = str(next_id)
@@ -155,7 +155,7 @@ class StickersRoutes(Routes):
         base_name = _Path(file.filename).name
         try:
             ext = _Path(base_name).suffix
-        except Exception:
+        except (ValueError, AttributeError):
             ext = ""
         if not ext:
             ext = ".png"

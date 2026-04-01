@@ -17,4 +17,3 @@ class BasePlugin(ABC):
     async def terminate(self):
         """Called before the plugin is to be turned off"""
         pass
-

@@ -49,9 +49,11 @@ class EventHandler:
     async def exec_handler(self, event, *args, **kwargs):
         try:
             await self.handler(event, *args, **kwargs)
-        except Exception:
+        except Exception as e:
             import traceback
-            logger.error(traceback.format_exc())
+            handler_name = getattr(self.handler, '__name__', str(self.handler))
+            logger.error(f"Error in handler '{handler_name}' for event {self.event_type.value}: {e}")
+            logger.debug(traceback.format_exc())
 
 
 class EventHandlerRegistry:

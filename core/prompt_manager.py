@@ -41,7 +41,7 @@ class Prompt:
 
 class PromptManager:
     """Prompt manager, managing all system prompts"""
-    
+
     def __init__(self,
                  kira_config: KiraConfig,
                  sticker_manager: StickerManager,
@@ -88,7 +88,7 @@ class PromptManager:
                       - 不要出现形如：(动作的描述)输出的对话 这样包含对动作的描述。应该做出的正确回应：输出的对话。
                       - 适当使用expressions中的表达，但不要滥用。
                     format：不需要在对话前加自己的名字，不要出现对动作的描述
-                    
+
                     你正在浏览社交媒体，以下是你看到的评论（You表示你自己发的评论）：
                     {comment_content}
                     你需要回复评论，直接输出评论内容，不要有任何多余信息"""

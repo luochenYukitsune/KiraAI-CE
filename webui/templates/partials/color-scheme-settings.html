@@ -1,0 +1,338 @@
+<!-- Color Scheme Settings Section -->
+<div id="color-scheme-settings" class="color-scheme-settings">
+    <div class="color-scheme-header">
+        <h2 data-i18n="color_scheme.title">配色方案</h2>
+        <p data-i18n="color_scheme.description">自定义界面颜色，打造专属视觉体验</p>
+    </div>
+
+    <div class="color-scheme-layout">
+        <!-- Preview Section -->
+        <div class="preview-section">
+            <div class="preview-header">
+                <h3 data-i18n="color_scheme.preview">实时预览</h3>
+                <label class="preview-toggle">
+                    <input type="checkbox" id="live-preview-toggle" checked>
+                    <span>实时更新</span>
+                </label>
+            </div>
+            <div class="preview-content">
+                <div class="preview-nav">
+                    <span class="preview-nav-item active">概览</span>
+                    <span class="preview-nav-item">设置</span>
+                    <span class="preview-nav-item">配置</span>
+                </div>
+                <div class="preview-sidebar">
+                    <div class="preview-sidebar-title">侧边栏</div>
+                    <div class="preview-nav-item active">项目一</div>
+                    <div class="preview-nav-item">项目二</div>
+                </div>
+                <div class="preview-card">
+                    <div class="preview-card-title">卡片标题</div>
+                    <div class="preview-card-text">这是一段示例文本，用于预览文字颜色效果。</div>
+                    <div class="preview-buttons">
+                        <button class="preview-btn preview-btn-default">主要按钮</button>
+                        <button class="preview-btn preview-btn-outline">次要按钮</button>
+                    </div>
+                </div>
+                <div class="preview-scrollbar">
+                    <div class="preview-scrollbar-thumb"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration Section -->
+        <div class="config-section">
+            <div class="config-header">
+                <h3 data-i18n="color_scheme.configure">配置颜色</h3>
+                <div class="config-tabs">
+                    <button class="config-tab active" data-tab="basics">基础</button>
+                    <button class="config-tab" data-tab="navigation">导航</button>
+                    <button class="config-tab" data-tab="sidebar">侧边栏</button>
+                    <button class="config-tab" data-tab="content">内容</button>
+                    <button class="config-tab" data-tab="text">文本</button>
+                    <button class="config-tab" data-tab="buttons">按钮</button>
+                    <button class="config-tab" data-tab="effects">效果</button>
+                    <button class="config-tab" data-tab="scrollbar">滚动条</button>
+                </div>
+            </div>
+
+            <!-- Basics Tab -->
+            <div class="config-content active" data-tab="basics">
+                <div class="color-category">
+                    <div class="category-title">主题色彩</div>
+                    <div class="color-field">
+                        <label class="color-field-label">主色调</label>
+                        <div id="color-picker-primary"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">悬停色</label>
+                        <div id="color-picker-primaryHover"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">激活色</label>
+                        <div id="color-picker-primaryActive"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Tab -->
+            <div class="config-content" data-tab="navigation">
+                <div class="color-category">
+                    <div class="category-title">导航栏颜色</div>
+                    <div class="color-field">
+                        <label class="color-field-label">文字颜色</label>
+                        <div id="color-picker-navText"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">背景颜色</label>
+                        <div id="color-picker-navBg"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">悬停背景</label>
+                        <div id="color-picker-navHoverBg"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">激活背景</label>
+                        <div id="color-picker-navActiveBg"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">激活文字</label>
+                        <div id="color-picker-navActiveText"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Tab -->
+            <div class="config-content" data-tab="sidebar">
+                <div class="color-category">
+                    <div class="category-title">侧边栏颜色</div>
+                    <div class="color-field">
+                        <label class="color-field-label">背景颜色</label>
+                        <div id="color-picker-sidebarBg"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">边框颜色</label>
+                        <div id="color-picker-sidebarBorder"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Tab -->
+            <div class="config-content" data-tab="content">
+                <div class="color-category">
+                    <div class="category-title">页面背景渐变</div>
+                    <div class="color-field">
+                        <label class="color-field-label">起始颜色</label>
+                        <div id="color-picker-pageBgStart"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">中间色 1</label>
+                        <div id="color-picker-pageBgMid1"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">中间色 2</label>
+                        <div id="color-picker-pageBgMid2"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">中间色 3</label>
+                        <div id="color-picker-pageBgMid3"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">结束颜色</label>
+                        <div id="color-picker-pageBgEnd"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Text Tab -->
+            <div class="config-content" data-tab="text">
+                <div class="color-category">
+                    <div class="category-title">文本颜色</div>
+                    <div class="color-field">
+                        <label class="color-field-label">标题颜色</label>
+                        <div id="color-picker-textPrimary"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">正文颜色</label>
+                        <div id="color-picker-textSecondary"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">辅助文字</label>
+                        <div id="color-picker-textMuted"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Buttons Tab -->
+            <div class="config-content" data-tab="buttons">
+                <div class="color-category">
+                    <div class="category-title">按钮颜色</div>
+                    <div class="color-field">
+                        <label class="color-field-label">默认背景</label>
+                        <div id="color-picker-buttonDefaultBg"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">悬停背景</label>
+                        <div id="color-picker-buttonHoverBg"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">激活背景</label>
+                        <div id="color-picker-buttonActiveBg"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">禁用背景</label>
+                        <div id="color-picker-buttonDisabledBg"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Effects Tab -->
+            <div class="config-content" data-tab="effects">
+                <div class="color-category">
+                    <div class="category-title">玻璃态效果</div>
+                    <div class="color-field">
+                        <label class="color-field-label">透明度 (0-1)</label>
+                        <div id="color-picker-aeroOpacity"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">模糊强度 (px)</label>
+                        <div id="color-picker-blurIntensity"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scrollbar Tab -->
+            <div class="config-content" data-tab="scrollbar">
+                <div class="color-category">
+                    <div class="category-title">滚动条颜色</div>
+                    <div class="color-field">
+                        <label class="color-field-label">轨道颜色</label>
+                        <div id="color-picker-scrollbarTrack"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">滑块颜色</label>
+                        <div id="color-picker-scrollbarThumb"></div>
+                    </div>
+                    <div class="color-field">
+                        <label class="color-field-label">悬停滑块</label>
+                        <div id="color-picker-scrollbarThumbHover"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scheme Manager Section -->
+        <div class="scheme-manager-section">
+            <div class="scheme-manager-header">
+                <h3 data-i18n="color_scheme.schemes">配色方案</h3>
+                <div class="scheme-actions">
+                    <button id="create-scheme-btn" class="scheme-btn scheme-btn-primary">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        新建
+                    </button>
+                    <button id="import-scheme-btn" class="scheme-btn scheme-btn-secondary">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                        </svg>
+                        导入
+                    </button>
+                    <button id="export-scheme-btn" class="scheme-btn scheme-btn-secondary">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        导出
+                    </button>
+                </div>
+            </div>
+            <div id="scheme-list" class="scheme-list">
+                <!-- Scheme cards will be rendered here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Rename Scheme Modal -->
+<div id="scheme-modal" class="modal-backdrop">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modal-title" class="modal-title">创建新配色方案</h3>
+            <button id="modal-close-btn" class="modal-close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">方案名称</label>
+                <input type="text" id="scheme-name-input" class="form-input" placeholder="输入方案名称">
+                <p class="form-help">给您的配色方案起一个易记的名称</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="modal-cancel-btn" class="scheme-btn scheme-btn-secondary">取消</button>
+            <button id="modal-save-btn" class="scheme-btn scheme-btn-primary">创建</button>
+        </div>
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div id="import-modal" class="modal-backdrop">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">导入配色方案</h3>
+            <button id="import-modal-close" class="modal-close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">选择文件</label>
+                <div class="file-upload-zone" onclick="document.getElementById('import-file-input').click()">
+                    <svg class="file-upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="file-upload-text">
+                        点击选择文件或拖拽文件到此处<br>
+                        <strong>支持 JSON 格式</strong>
+                    </p>
+                </div>
+                <input type="file" id="import-file-input" class="file-upload-input" accept=".json">
+            </div>
+            <div id="import-preview" class="scheme-list" style="margin-top: 1rem;"></div>
+        </div>
+        <div class="modal-footer">
+            <button id="import-modal-cancel" class="scheme-btn scheme-btn-secondary">取消</button>
+            <button id="import-modal-confirm" class="scheme-btn scheme-btn-primary" onclick="importScheme()">导入</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="confirm-modal" class="modal-backdrop">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3 class="modal-title">确认删除</h3>
+            <button id="confirm-modal-close" class="modal-close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p>确定要删除配色方案 <strong id="delete-scheme-name"></strong> 吗？</p>
+            <p class="form-help" style="margin-top: 0.5rem;">此操作无法撤销。</p>
+        </div>
+        <div class="modal-footer">
+            <button id="cancel-delete-btn" class="scheme-btn scheme-btn-secondary">取消</button>
+            <button id="confirm-delete-btn" class="scheme-btn" style="background: #ef4444; color: white;">删除</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container" class="toast-container"></div>

@@ -1,3 +1,10 @@
+"""
+Adapter Registry Module.
+
+This module provides the AdapterManager class for discovering, registering,
+and managing platform adapters (QQ, Telegram, Bilibili, etc.).
+"""
+
 import asyncio
 import json
 import os
@@ -19,6 +26,27 @@ logger = get_logger("adapter", "blue")
 
 
 class AdapterManager:
+    """
+    Manager for platform adapters, handling discovery, registration, and lifecycle.
+
+    This class scans for available adapters, manages their configuration,
+    and handles starting/stopping adapter instances.
+
+    Class Attributes:
+        _registry: Dictionary mapping platform names to adapter classes.
+        _manifests: Dictionary mapping platform names to manifest data.
+        _schemas: Dictionary mapping platform names to configuration schemas.
+
+    Instance Attributes:
+        kira_config: KiraConfig instance containing application settings.
+        _adapters: Dictionary of running adapter instances.
+        adas_config: Current adapter configuration.
+        loop: Asyncio event loop.
+        event_queue: Queue for adapter events.
+        llm_api: LLMClient instance for adapters to use.
+        _adapter_tasks: Dictionary of running adapter tasks.
+    """
+
     _registry: Dict[str, Type[Union[IMAdapter, SocialMediaAdapter]]] = {}
     _manifests: Dict[str, dict] = {}
     _schemas: Dict[str, list[BaseConfigField]] = {}
@@ -30,23 +58,57 @@ class AdapterManager:
         self.loop = loop
         self.event_queue = event_queue
         self.llm_api = llm_api
+        self._adapter_tasks: dict[str, asyncio.Task] = {}
 
         src_dir = os.path.join(os.path.dirname(__file__), "src")
         self.scan_adapters(src_dir)
 
     @classmethod
     def get_adapter_class(cls, platform: str) -> Optional[Type[Union[IMAdapter, SocialMediaAdapter]]]:
+        """
+        Get the adapter class for a platform.
+
+        Args:
+            platform: Platform name (e.g., 'qq', 'telegram').
+
+        Returns:
+            Adapter class or None if not found.
+        """
         return cls._registry.get(platform)
 
     @classmethod
     def get_adapter_types(cls) -> list[str]:
+        """
+        Get list of all registered adapter platform names.
+
+        Returns:
+            List of platform name strings.
+        """
         return list(cls._registry.keys())
 
     @classmethod
     def get_schema(cls, platform: str) -> list[BaseConfigField]:
+        """
+        Get the configuration schema for a platform.
+
+        Args:
+            platform: Platform name.
+
+        Returns:
+            List of configuration field definitions.
+        """
         return cls._schemas.get(platform, [])
 
     def get_adapter_info(self, adapter_id: str) -> Optional[AdapterInfo]:
+        """
+        Get information about a specific adapter by ID.
+
+        Args:
+            adapter_id: Unique adapter identifier.
+
+        Returns:
+            AdapterInfo instance or None if not found.
+        """
         adapters_config = self.kira_config.get("adapters", {})
         config_entry = adapters_config.get(adapter_id)
         if not isinstance(config_entry, dict):
@@ -71,6 +133,12 @@ class AdapterManager:
         )
 
     def get_adapter_infos(self) -> list[AdapterInfo]:
+        """
+        Get information about all configured adapters.
+
+        Returns:
+            List of AdapterInfo instances for all adapters.
+        """
         adapters_config = self.kira_config.get("adapters", {})
         if not isinstance(adapters_config, dict):
             return []
@@ -101,6 +169,12 @@ class AdapterManager:
 
     @classmethod
     def scan_adapters(cls, src_dir: str):
+        """
+        Scan a directory for adapter modules and register them.
+
+        Args:
+            src_dir: Directory path to scan for adapters.
+        """
         if not os.path.exists(src_dir):
             logger.error(f"Adapter source directory not found: {src_dir}")
             return
@@ -189,6 +263,11 @@ class AdapterManager:
                 logger.warning(f"No adapter class found in {adapter_dir}")
 
     async def initialize(self):
+        """
+        Initialize all configured adapters.
+
+        Loads adapter configurations and starts enabled adapters.
+        """
         logger.debug("[AdapterManager] === initialize START ===")
         for adapter_id in self.adas_config.keys():
             info = self.get_adapter_info(adapter_id)
@@ -394,6 +473,7 @@ class AdapterManager:
         """start an adapter by specified adapter name"""
         try:
             task = asyncio.create_task(self._adapters[name].start())
+            self._adapter_tasks[name] = task
             task.add_done_callback(lambda t: logger.info(f"Started adapter {name}"))
         except Exception as e:
             logger.error(f"Failed to start adapter {name}: {e}")
@@ -402,8 +482,12 @@ class AdapterManager:
         """stop an adapter by specified adapter name"""
         adapter = self._adapters.get(name)
         if adapter:
-            await adapter.stop()
+            try:
+                await adapter.stop()
+            except Exception as e:
+                logger.error(f"Error stopping adapter {name}: {e}")
             self._adapters.pop(name, None)
+            self._adapter_tasks.pop(name, None)
             logger.info(f"Stopped adapter {name}")
 
     async def delete_adapter(self, adapter_id: str) -> bool:
@@ -436,8 +520,13 @@ class AdapterManager:
 
     async def stop_adapters(self):
         """stop all running adapters"""
-        for ada in self._adapters:
-            await self._adapters[ada].stop()
+        for ada in list(self._adapters.keys()):
+            try:
+                await self._adapters[ada].stop()
+            except Exception as e:
+                logger.error(f"Error stopping adapter {ada}: {e}")
+        self._adapters.clear()
+        self._adapter_tasks.clear()
 
     def get_adapters(self) -> dict[str, Union[IMAdapter, SocialMediaAdapter]]:
         """return the entire dict where adapters are registered"""

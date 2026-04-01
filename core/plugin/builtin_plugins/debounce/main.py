@@ -15,15 +15,24 @@ class DebouncePlugin(BasePlugin):
         self.max_buffer_messages = int(bot_cfg.get("max_buffer_messages", 3))
 
         self.waking_words = cfg.get("waking_words", [])
-    
+
     async def initialize(self):
         logger.info(f"[Debounce] enabled")
-    
+
     async def terminate(self):
         """
-        Cleanup when plugin is terminated
+        Cleanup when plugin is terminated - cancel all pending debounce tasks
         """
-        pass
+        for sid, task in list(self.session_tasks.items()):
+            if not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+        self.session_tasks.clear()
+        self.session_events.clear()
+        logger.info("[Debounce] Plugin terminated, all tasks cancelled")
 
     @on.im_message(priority=Priority.HIGH)
     async def handle_msg(self, event: KiraMessageEvent):

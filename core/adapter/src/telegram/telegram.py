@@ -92,7 +92,7 @@ class TelegramAdapter(IMAdapter):
         if not self.bot_token:
             logger.error("Telegram bot_token is not set")
             return
-        
+
         # Register command handlers
         self.app.add_handler(CommandHandler("start", self._cmd_start))
         self.app.add_handler(CommandHandler("help", self._cmd_help))
@@ -313,24 +313,22 @@ class TelegramAdapter(IMAdapter):
     async def send_group_message(self, group_id: Union[int, str], send_message_obj: MessageChain):
         async def _send():
             message_id = None
-            if len(send_message_obj) >= 2:
-                if isinstance(send_message_obj[0], Reply):
-                    # Only effective when followed by text, send as reply with text
-                    if isinstance(send_message_obj[1], Text):
-                        sent = await self.app.bot.send_message(chat_id=int(group_id), text=send_message_obj[1].text, reply_to_message_id=int(send_message_obj[0].message_id))
+            msg_list = list(send_message_obj)
+            if len(msg_list) >= 2:
+                if isinstance(msg_list[0], Reply):
+                    if isinstance(msg_list[1], Text):
+                        sent = await self.app.bot.send_message(chat_id=int(group_id), text=msg_list[1].text, reply_to_message_id=int(msg_list[0].message_id))
                         message_id = str(sent.message_id)
-                del send_message_obj[2:]
-            # merge At + Text into HTML-formatted message chunks
+                msg_list = msg_list[2:]
             idx = 0
-            while idx < len(send_message_obj):
-                ele = send_message_obj[idx]
+            while idx < len(msg_list):
+                ele = msg_list[idx]
                 if isinstance(ele, Text) or isinstance(ele, At):
                     html_text = ""
-                    # Accumulate contiguous At/Text messages
-                    while idx < len(send_message_obj) and (
-                            isinstance(send_message_obj[idx], Text) or isinstance(send_message_obj[idx], At)
+                    while idx < len(msg_list) and (
+                            isinstance(msg_list[idx], Text) or isinstance(msg_list[idx], At)
                     ):
-                        part = send_message_obj[idx]
+                        part = msg_list[idx]
                         if isinstance(part, Text):
                             html_text += part.text
                         else:
@@ -378,23 +376,22 @@ class TelegramAdapter(IMAdapter):
     async def send_direct_message(self, user_id: Union[int, str], send_message_obj: MessageChain):
         async def _send():
             message_id = None
-            if len(send_message_obj) >= 2:
-                if isinstance(send_message_obj[0], Reply):
-                    # Only effective when followed by text, send as reply with text
-                    if isinstance(send_message_obj[1], Text):
-                        sent = await self.app.bot.send_message(chat_id=int(user_id), text=send_message_obj[1].text, reply_to_message_id=int(send_message_obj[0].message_id))
+            msg_list = list(send_message_obj)
+            if len(msg_list) >= 2:
+                if isinstance(msg_list[0], Reply):
+                    if isinstance(msg_list[1], Text):
+                        sent = await self.app.bot.send_message(chat_id=int(user_id), text=msg_list[1].text, reply_to_message_id=int(msg_list[0].message_id))
                         message_id = str(sent.message_id)
-                del send_message_obj[2:]
-            # merge At + Text into HTML-formatted message chunks
+                msg_list = msg_list[2:]
             idx = 0
-            while idx < len(send_message_obj):
-                ele = send_message_obj[idx]
+            while idx < len(msg_list):
+                ele = msg_list[idx]
                 if isinstance(ele, Text) or isinstance(ele, At):
                     html_text = ""
-                    while idx < len(send_message_obj) and (
-                            isinstance(send_message_obj[idx], Text) or isinstance(send_message_obj[idx], At)
+                    while idx < len(msg_list) and (
+                            isinstance(msg_list[idx], Text) or isinstance(msg_list[idx], At)
                     ):
-                        part = send_message_obj[idx]
+                        part = msg_list[idx]
                         if isinstance(part, Text):
                             html_text += part.text
                         else:

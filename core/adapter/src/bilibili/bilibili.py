@@ -2,25 +2,14 @@ import asyncio
 from datetime import datetime
 import re
 import time
-from typing import Union, Optional, Dict, Any
+from typing import Union, Optional
 
 from bilibili_api import comment, Credential, homepage, search
 from bilibili_api.utils.aid_bvid_transformer import bvid2aid
 
 from core.adapter.adapter_utils import SocialMediaAdapter
 from core.chat import KiraCommentEvent
-
-from core.chat.message_elements import (
-    Text,
-    Image,
-    At,
-    Reply,
-    Emoji,
-    Sticker,
-    Record,
-    Notice,
-    Poke
-)
+from core.chat.message_elements import Text
 
 
 class BiliBiliAdapter(SocialMediaAdapter):

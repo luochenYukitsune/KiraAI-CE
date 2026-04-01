@@ -51,7 +51,7 @@ class MCPServer:
                 server_cfg["headers"] = self.headers
         if self.timeout:
             server_cfg["timeout"] = self.timeout
-        
+
         server_cfg.setdefault("type", self.type)
         config = {"mcpServers": {self.name: server_cfg}}
         return config

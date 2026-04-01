@@ -58,10 +58,10 @@ class MemoryPlugin(BasePlugin):
         super().__init__(ctx, cfg)
         self.core_memory_path = f"{get_data_path()}/memory/core.txt"
         self.lock = asyncio.Lock()
-    
+
     async def initialize(self):
         self._ensure_memory_file()
-    
+
     async def terminate(self):
         pass
 

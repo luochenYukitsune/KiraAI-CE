@@ -258,6 +258,21 @@ function setupEventListeners() {
     EventRouter.on('new-session',   () => showNotification('New session functionality coming soon', 'info'));
     EventRouter.on('clear-logs',    () => clearLogs());
     EventRouter.on('refresh-logs',  () => refreshLogs());
+
+    // Mobile menu toggle
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    if (mobileMenuButton) {
+        mobileMenuButton.addEventListener('click', toggleSidebar);
+    }
+
+    // Close sidebar when clicking nav items on mobile
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth < 1024) {
+                closeSidebar();
+            }
+        });
+    });
 }
 
 function initializeDropzones() {
@@ -316,3 +331,54 @@ window.switchPage = switchPage;
 window.loadPageData = loadPageData;
 window.apiCall = apiCall;
 window.showNotification = showNotification;
+
+// Configuration page tab switching
+function switchConfigPage(pageName) {
+    // Hide all config panels
+    document.querySelectorAll('.config-page-panel').forEach(panel => {
+        panel.classList.add('hidden');
+    });
+    
+    // Remove active class from all tabs
+    document.querySelectorAll('.config-page-tab').forEach(tab => {
+        tab.classList.remove('border-blue-600', 'dark:border-blue-500', 'text-blue-600', 'dark:text-blue-500');
+        tab.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+    });
+    
+    // Show selected panel
+    const targetPanel = document.getElementById(`panel-config-${pageName}`);
+    if (targetPanel) {
+        targetPanel.classList.remove('hidden');
+    }
+    
+    // Activate selected tab
+    const targetTab = document.getElementById(`tab-config-${pageName}`);
+    if (targetTab) {
+        targetTab.classList.add('border-blue-600', 'dark:border-blue-500', 'text-blue-600', 'dark:text-blue-500');
+        targetTab.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+    }
+}
+
+// Mobile sidebar toggle functions
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    if (sidebar && overlay) {
+        sidebar.classList.toggle('-translate-x-full');
+        overlay.classList.toggle('hidden');
+    }
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    if (sidebar && overlay) {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+    }
+}
+
+window.toggleSidebar = toggleSidebar;
+window.closeSidebar = closeSidebar;

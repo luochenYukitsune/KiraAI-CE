@@ -106,8 +106,8 @@ class McpRoutes(Routes):
             )
             try:
                 await manager.list_tools(server)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to list tools for MCP server {server.name}: {e}")
             return McpServerItem(
                 id=str(server.name),
                 type=str(server.type),
@@ -131,7 +131,8 @@ class McpRoutes(Routes):
             raise HTTPException(status_code=503, detail="MCP manager not available")
         try:
             enabled = bool(payload.get("enabled"))
-        except Exception:
+        except (TypeError, AttributeError) as e:
+            logger.error(f"Invalid payload for set_mcp_server_enabled: {e}")
             raise HTTPException(status_code=400, detail="Invalid payload")
         try:
             manager = self.lifecycle.mcp_manager
@@ -178,7 +179,8 @@ class McpRoutes(Routes):
                     if isinstance(payload.config, str)
                     else payload.config
                 )
-            except Exception:
+            except json.JSONDecodeError as e:
+                logger.error(f"Invalid MCP config JSON: {e}")
                 raise HTTPException(status_code=400, detail="Invalid MCP config JSON")
             manager = self.lifecycle.mcp_manager
             manager.update_server_from_editor(

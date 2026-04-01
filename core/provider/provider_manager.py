@@ -21,34 +21,38 @@ logger = get_logger("provider_manager", "cyan")
 
 class ProviderManager:
     """管理所有 Provider"""
-    
+
     _instance = None
     _providers: Dict[str, BaseProvider] = {}  # Provider instances
     _provider_configs: Dict[str, dict]
-    
+
     # Registry data
     _registry: Dict[str, Type[BaseProvider]] = {}  # Provider classes
     _manifests: Dict[str, dict] = {}
     _schemas: Dict[str, dict] = {}
-    
+
+    # Cache
+    _models_cache: Dict[str, dict] = {}
+    _models_cache_valid: bool = False
+
     def __new__(cls, kira_config: KiraConfig):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
-    
+
     def __init__(self, kira_config: KiraConfig):
         if not hasattr(self, '_initialized'):
             self._initialized = True
-            
+
             # Load providers from src directory using Registry logic
             src_dir = os.path.join(os.path.dirname(__file__), "src")
             self.scan_providers(src_dir)
 
             self.kira_config = kira_config
-            
+
             self.providers_config = kira_config.get("providers", {})
             self._load_providers()
-            
+
     @classmethod
     def get_provider_class(cls, name: str) -> Optional[Type]:
         return cls._registry.get(name)
@@ -238,10 +242,10 @@ class ProviderManager:
         if not provider_config:
             logger.error(f"Provider {provider_id} not found in config")
             return False
-        
+
         model_config_root = provider_config.setdefault("model_config", {})
         model_type_config = model_config_root.setdefault(model_type, {})
-            
+
         # 3. Get default config from schema
         model_defaults = {}
         # 提供商的名字，如OpenAI
@@ -254,16 +258,18 @@ class ProviderManager:
                 for field in type_fields:
                     if isinstance(field, BaseConfigField):
                         model_defaults[field.key] = field.default
-        
+
         model_config = dict(model_defaults)
         if config:
             model_config.update(config)
-        
+
         model_type_config[model_id] = model_config
-        
+
         self.kira_config["providers"][provider_id] = provider_config
         self.kira_config.save_config()
-        
+
+        self._invalidate_models_cache()
+
         try:
             self.set_provider(provider_id, provider_config)
         except Exception as e:
@@ -273,13 +279,21 @@ class ProviderManager:
 
     def get_models(self, provider_id: str) -> dict:
         """Get model info and build model configs"""
+        if self._models_cache_valid and provider_id in self._models_cache:
+            return self._models_cache[provider_id]
         model_infos = self.get_model_infos(provider_id)
         models: dict = {}
         for info in model_infos:
             type_key = info.model_type.value if isinstance(info.model_type, ModelType) else info.model_type
             type_dict = models.setdefault(type_key, {})
             type_dict[info.model_id] = info.model_config
+        self._models_cache[provider_id] = models
         return models
+
+    def _invalidate_models_cache(self):
+        """Invalidate the models cache"""
+        self._models_cache.clear()
+        self._models_cache_valid = False
 
     def get_model_info(self, provider_id: str, model_id: str) -> Optional[ModelInfo]:
         providers_config = self.kira_config.get("providers", {})
@@ -345,6 +359,8 @@ class ProviderManager:
         self.kira_config["providers"][provider_id] = provider_config
         self.kira_config.save_config()
 
+        self._invalidate_models_cache()
+
         try:
             self.set_provider(provider_id, provider_config)
         except Exception as e:
@@ -370,6 +386,8 @@ class ProviderManager:
         provider_config["model_config"] = model_config_root
         self.kira_config["providers"][provider_id] = provider_config
         self.kira_config.save_config()
+
+        self._invalidate_models_cache()
 
         try:
             self.set_provider(provider_id, provider_config)
@@ -400,7 +418,7 @@ class ProviderManager:
             try:
                 with open(manifest_path, "r", encoding="utf-8") as f:
                     manifest = json.load(f)
-                
+
                 provider_name = manifest.get("name")
                 if not provider_name:
                     logger.warning(f"Manifest in {provider_dir} missing 'name'")
@@ -446,13 +464,13 @@ class ProviderManager:
                 if not provider_script or not module_name:
                     logger.warning(f"No {entry}.py, provider.py or __init__.py found in {provider_dir}")
                     continue
-                
+
                 # Import the module
                 spec = importlib.util.spec_from_file_location(module_name, provider_script)
                 if spec and spec.loader:
                     module = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(module)
-                    
+
                     # Find the provider class
                     found = False
                     for attr_name, attr_value in inspect.getmembers(module):
@@ -465,13 +483,13 @@ class ProviderManager:
                             logger.info(f"Registered provider: {provider_name}")
                             found = True
                             break
-                    
+
                     if not found:
                         logger.warning(f"No class inheriting from BaseProvider found in {provider_dir}")
 
             except Exception as e:
                 logger.error(f"Error loading provider from {provider_dir}: {e}")
-    
+
     def _load_providers(self):
         """从配置加载所有 providers"""
         providers_config = self.providers_config
@@ -483,7 +501,7 @@ class ProviderManager:
         Generate provider config file from schema.json.
         Saves to data/config/provider_{provider_id}.json.
         """
-        
+
         schema = self.get_schema(provider_format)
         if not schema:
             logger.error(f"No schema found for provider format: {provider_format}")
@@ -537,7 +555,7 @@ class ProviderManager:
     def get_provider(self, provider_id: str) -> Optional[BaseProvider]:
         """获取指定的 provider"""
         return self._providers.get(provider_id)
-    
+
     def get_all_providers(self) -> Dict[str, BaseProvider]:
         """获取所有 providers"""
         return self._providers.copy()

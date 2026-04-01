@@ -1,3 +1,10 @@
+"""
+KiraAI Launcher Module.
+
+This module provides the main entry point for starting KiraAI,
+including initialization of the lifecycle manager and WebUI server.
+"""
+
 import asyncio
 import json
 import psutil
@@ -15,7 +22,19 @@ from webui.app import KiraWebUI
 
 
 class KiraLauncher:
-    """KiraAI Launcher"""
+    """
+    KiraAI Launcher - Main entry point for the application.
+
+    Responsible for initializing and coordinating the lifecycle manager
+    and WebUI server, handling graceful shutdown, and displaying startup
+    information including network addresses.
+
+    Attributes:
+        lifecycle: KiraLifecycle instance managing all core modules.
+        stats: Statistics instance for tracking runtime metrics.
+        webui: KiraWebUI instance for the web management interface.
+        logger: Logger instance for this module.
+    """
     def __init__(self):
         self.lifecycle: Optional[KiraLifecycle] = None
         self.stats: Optional[Statistics] = None
@@ -23,6 +42,15 @@ class KiraLauncher:
         self.logger = get_logger("launcher", "blue")
 
     async def start(self):
+        """
+        Start the KiraAI application.
+
+        Initializes the statistics tracker, lifecycle manager, and WebUI server.
+        Handles graceful shutdown on KeyboardInterrupt or CancelledError.
+
+        Returns:
+            None
+        """
         self.stats = Statistics()
 
         self.lifecycle = KiraLifecycle(stats=self.stats)
@@ -59,6 +87,13 @@ class KiraLauncher:
 
     @staticmethod
     def _get_ip_addresses():
+        """
+        Get all available IP addresses on the system.
+
+        Returns:
+            List of tuples containing (interface_name, ip_address).
+            Local addresses are labeled as "Local".
+        """
         ip_addresses = []
         for interface, interface_addresses in psutil.net_if_addrs().items():
             for address in interface_addresses:

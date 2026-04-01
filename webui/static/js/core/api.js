@@ -19,17 +19,38 @@ async function apiCall(url, options = {}) {
 
     headers['Authorization'] = `Bearer ${jwtToken}`;
 
-    const response = await fetch(url, {
-        ...options,
-        headers
-    });
+    const timeout = options.timeout || 30000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    // Handle 401 Unauthorized
-    if (response.status === 401) {
-        localStorage.removeItem('jwt_token');
-        window.location.href = '/login';
-        throw new Error('Unauthorized');
+    try {
+        const response = await fetch(url, {
+            ...options,
+            headers,
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.status === 401) {
+            localStorage.removeItem('jwt_token');
+            window.location.href = '/login';
+            throw new Error('Unauthorized');
+        }
+
+        if (!response.ok && response.status >= 500) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || `Server error: ${response.status}`);
+        }
+
+        return response;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        
+        if (error.name === 'AbortError') {
+            throw new Error('Request timeout');
+        }
+        
+        throw error;
     }
-
-    return response;
 }

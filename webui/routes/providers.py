@@ -1,3 +1,10 @@
+"""
+Providers Routes Module.
+
+This module provides API endpoints for managing LLM providers,
+including CRUD operations, model management, and schema retrieval.
+"""
+
 from typing import Dict, List
 
 from fastapi import Depends, HTTPException, status
@@ -18,6 +25,13 @@ logger = get_logger("webui", "blue")
 
 
 class ProvidersRoutes(Routes):
+    """
+    Routes for provider management.
+
+    Provides endpoints for listing, creating, updating, and deleting
+    LLM providers, as well as managing models within providers.
+    """
+
     def __init__(self, app, lifecycle):
         super().__init__(app, lifecycle)
         self._providers: Dict[str, ProviderResponse] = {}
