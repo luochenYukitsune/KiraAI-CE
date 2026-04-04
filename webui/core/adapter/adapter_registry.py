@@ -18,6 +18,36 @@ from .adapter_utils import IMAdapter, SocialMediaAdapter
 logger = get_logger("adapter", "blue")
 
 
+def _is_im_adapter_subclass(cls) -> bool:
+    """Check if class is subclass of IMAdapter by checking __mro__ for IMAdapter class names."""
+    for base in getattr(cls, '__mro__', []):
+        if base.__name__ == 'IMAdapter':
+            return True
+    return False
+
+
+def _is_social_media_adapter_subclass(cls) -> bool:
+    """Check if class is subclass of SocialMediaAdapter by checking __mro__ for SocialMediaAdapter class names."""
+    for base in getattr(cls, '__mro__', []):
+        if base.__name__ == 'SocialMediaAdapter':
+            return True
+    return False
+
+
+def _is_adapter_class(cls) -> bool:
+    """Check if class is subclass of IMAdapter or SocialMediaAdapter."""
+    return _is_im_adapter_subclass(cls) or _is_social_media_adapter_subclass(cls)
+
+
+def _get_adapter_type(cls) -> Optional[str]:
+    """Get adapter type ('im' or 'social') based on class inheritance."""
+    if _is_im_adapter_subclass(cls):
+        return 'im'
+    elif _is_social_media_adapter_subclass(cls):
+        return 'social'
+    return None
+
+
 class AdapterManager:
     _registry: Dict[str, Type[Union[IMAdapter, SocialMediaAdapter]]] = {}
     _manifests: Dict[str, dict] = {}
@@ -177,7 +207,7 @@ class AdapterManager:
 
             found = False
             for attr_name, attr_value in inspect.getmembers(module):
-                if inspect.isclass(attr_value) and issubclass(attr_value, (IMAdapter, SocialMediaAdapter)) and attr_value not in (IMAdapter, SocialMediaAdapter):
+                if inspect.isclass(attr_value) and _is_adapter_class(attr_value):
                     cls._registry[platform_name] = attr_value
                     cls._manifests[platform_name] = manifest
                     cls._schemas[platform_name] = schema_fields
@@ -368,9 +398,10 @@ class AdapterManager:
             return
 
         try:
-            if issubclass(adapter_cls, IMAdapter):
+            adapter_type = _get_adapter_type(adapter_cls)
+            if adapter_type == 'im':
                 instance = adapter_cls(info, self.loop, self.event_queue, self.llm_api)
-            elif issubclass(adapter_cls, SocialMediaAdapter):
+            elif adapter_type == 'social':
                 instance = adapter_cls(info, self.loop, self.event_queue)
             else:
                 logger.error(f"Adapter class for platform {platform} is not a valid adapter type")

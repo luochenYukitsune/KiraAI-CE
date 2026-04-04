@@ -38,7 +38,6 @@ function updateTranslations() {
         const translation = i18next.t(key);
         if (translation && translation !== key) {
             element.placeholder = translation;
-            // Only set aria-label if a dedicated i18n key is provided, or if it was previously empty
             const ariaKey = element.getAttribute('data-i18n-aria-label');
             if (ariaKey) {
                 const ariaTranslation = i18next.t(ariaKey);
@@ -56,7 +55,6 @@ function updateTranslations() {
         }
     });
 
-    // Standalone aria-label translations for elements without data-i18n-placeholder
     document.querySelectorAll('[data-i18n-aria-label]:not([data-i18n-placeholder])').forEach(element => {
         const ariaKey = element.getAttribute('data-i18n-aria-label');
         const ariaTranslation = i18next.t(ariaKey);
@@ -79,7 +77,7 @@ function updateTranslations() {
     });
 }
 
-// Initialize i18next
+// Initialize i18next with language persistence
 i18next
     .use(i18nextBrowserLanguageDetector)
     .init({
@@ -88,21 +86,27 @@ i18next
         debug: false,
         interpolation: {
             escapeValue: false
+        },
+        detection: {
+            order: ['localStorage', 'navigator'],
+            caches: ['localStorage']
         }
     })
     .then(() => {
-        // Update all elements with data-i18n attribute
         updateTranslations();
         
-        // Sync language selector with current language after DOM is ready
         const syncLanguageSelector = () => {
             const languageSelector = document.getElementById('language-selector');
             if (languageSelector) {
                 languageSelector.value = i18next.language;
             }
+            
+            const settingsLanguageSelect = document.getElementById('settings-language');
+            if (settingsLanguageSelect) {
+                settingsLanguageSelect.value = i18next.language;
+            }
         };
         
-        // Run immediately if DOM is ready, otherwise wait
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', syncLanguageSelector);
         } else {
@@ -110,14 +114,21 @@ i18next
         }
     });
 
-// Use event delegation to handle language selector changes
-// This works with both native select and CustomSelect
+// Handle language selector changes
 document.addEventListener('change', (e) => {
-    if (e.target.id === 'language-selector') {
+    if (e.target.id === 'language-selector' || e.target.id === 'settings-language') {
         const newLang = e.target.value;
+        
         i18next.changeLanguage(newLang).then(() => {
             try {
                 updateTranslations();
+                
+                document.querySelectorAll('#language-selector, #settings-language').forEach(selector => {
+                    if (selector !== e.target) {
+                        selector.value = newLang;
+                    }
+                });
+                
                 const page = document.getElementById('page-configuration');
                 if (page && !page.classList.contains('hidden') && window.configManager && typeof window.configManager.render === 'function') {
                     window.configManager.render();
@@ -137,6 +148,11 @@ window.i18n = {
     changeLanguage: (lng) => i18next.changeLanguage(lng).then(() => {
         try {
             updateTranslations();
+            
+            document.querySelectorAll('#language-selector, #settings-language').forEach(selector => {
+                selector.value = lng;
+            });
+            
             const page = document.getElementById('page-configuration');
             if (page && !page.classList.contains('hidden') && window.configManager && typeof window.configManager.render === 'function') {
                 window.configManager.render();

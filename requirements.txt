@@ -1,4 +1,4 @@
-bilibili_api_python>=17.4.0
+bilibili-api-python>=17.4.0
 colorlog>=6.9.0
 python-telegram-bot~=21.3
 openai>=1.106.1
@@ -14,3 +14,5 @@ psutil>=5.9.0
 fastmcp==2.14.4
 httpx>=0.28.1
 watchfiles>=1.1.1
+pycryptodome>=3.20.0
+qrcode>=7.4.2
