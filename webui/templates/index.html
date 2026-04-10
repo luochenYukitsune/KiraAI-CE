@@ -622,8 +622,87 @@
                                     <option value="dark" data-i18n="settings.theme_dark">Dark</option>
                                 </select>
                             </div>
-                            <div class="flex justify-end">
-                                <button id="save-settings" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors" data-i18n="settings.save">Save Settings</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Background Music Settings -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-6" data-i18n="settings.background_music_title">Background Music</h3>
+                        <div class="space-y-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" data-i18n="settings.background_music_enabled">Enable Background Music</label>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" data-i18n="settings.background_music_enabled_desc">Play background music while using the application</p>
+                                </div>
+                                <button id="bg-music-toggle" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-200 dark:bg-gray-600 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" role="switch" aria-checked="false">
+                                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0"></span>
+                                </button>
+                            </div>
+                            
+                            <div id="bg-music-controls" class="space-y-4 hidden">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" data-i18n="settings.background_music_source">Music Source</label>
+                                    <div class="flex space-x-2 mb-2">
+                                        <input type="text" id="bg-music-url" class="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://example.com/music.mp3" data-i18n-placeholder="settings.background_music_url_placeholder">
+                                        <button id="bg-music-apply-url" class="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors" data-i18n="settings.background_music_apply">Apply</button>
+                                    </div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3" data-i18n="settings.background_music_url_hint">Enter a direct link to an audio file (MP3, WAV, OGG)</p>
+                                    
+                                    <div class="flex items-center space-x-2 mb-3">
+                                        <span class="text-xs text-gray-400 dark:text-gray-500" data-i18n="settings.background_music_or">or</span>
+                                        <div class="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
+                                    </div>
+                                    
+                                    <div class="flex space-x-2">
+                                        <label class="flex-1 cursor-pointer">
+                                            <div class="flex items-center justify-center px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
+                                                <svg class="w-5 h-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                                </svg>
+                                                <span class="text-sm text-gray-600 dark:text-gray-400" data-i18n="settings.background_music_upload">Upload Local File</span>
+                                            </div>
+                                            <input type="file" id="bg-music-file-input" class="hidden" accept=".mp3,.wav,.ogg,.m4a,.flac,.aac">
+                                        </label>
+                                    </div>
+                                    
+                                    <div id="bg-music-local-files" class="mt-3">
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" data-i18n="settings.background_music_local_files">Local Music Files</label>
+                                        <select id="bg-music-file-select" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <option value="" data-i18n="settings.background_music_select_file">Select a file...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <span data-i18n="settings.background_music_volume">Volume</span>: <span id="bg-music-volume-value">50%</span>
+                                    </label>
+                                    <input type="range" id="bg-music-volume" min="0" max="100" value="50" class="w-48 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                                </div>
+                                
+                                <div class="flex items-center justify-between">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" data-i18n="settings.background_music_loop">Loop Playback</label>
+                                    <button id="bg-music-loop-toggle" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-blue-600 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" role="switch" aria-checked="true">
+                                        <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-5"></span>
+                                    </button>
+                                </div>
+                                
+                                <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-3">
+                                            <button id="bg-music-play" class="p-2 bg-blue-600 dark:bg-blue-700 text-white rounded-full hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors">
+                                                <svg id="bg-music-play-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                            </button>
+                                            <div>
+                                                <p id="bg-music-status" class="text-sm font-medium text-gray-800 dark:text-gray-200" data-i18n="settings.background_music_stopped">Stopped</p>
+                                                <p id="bg-music-source" class="text-xs text-gray-500 dark:text-gray-400" data-i18n="settings.background_music_no_source">No music source</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -854,6 +933,30 @@
             <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
                 <button onclick="closeModelModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-i18n="model.modal_cancel">Cancel</button>
                 <button onclick="saveModel()" class="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors" data-i18n="model.modal_save">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Model Test Modal -->
+    <div id="model-test-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg mx-4">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100" data-i18n="provider.test_modal_title">Test Model</h3>
+                    <p id="model-test-model-info" class="text-sm text-gray-500 dark:text-gray-400 mt-1"></p>
+                </div>
+                <button onclick="closeModelTestModal()" class="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="px-6 py-4">
+                <div id="model-test-status" class="mb-4"></div>
+                <div id="model-test-result"></div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+                <button onclick="closeModelTestModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-i18n="provider.test_close">Close</button>
             </div>
         </div>
     </div>

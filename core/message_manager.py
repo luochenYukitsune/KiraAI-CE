@@ -1,4 +1,5 @@
 import asyncio
+import json
 import time
 from asyncio import Lock
 import xml.etree.ElementTree as ET
@@ -11,7 +12,7 @@ import os
 from core.logging_manager import get_logger
 from core.utils.common_utils import image_to_base64
 from core.utils.path_utils import get_data_path
-from core.chat.message_utils import KiraMessageEvent, KiraMessageBatchEvent,  KiraCommentEvent, MessageChain
+from core.chat.message_utils import KiraMessageEvent, KiraMessageBatchEvent, KiraCommentEvent, MessageChain
 from core.chat.message_utils import KiraIMSentResult, KiraStepResult
 from core.prompt_manager import Prompt
 
@@ -91,6 +92,58 @@ class SessionBufferManager:
         return self.buffers[session]
 
 
+class ImageDescCache:
+    """Cache image/sticker VLM descriptions using MD5 hash to avoid duplicate requests"""
+
+    _instance: Optional["ImageDescCache"] = None
+
+    def __new__(cls, cache_file: str = None):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+
+    def __init__(self, cache_file: str = None):
+        if self._initialized:
+            return
+        self._initialized = True
+        if cache_file is None:
+            cache_file = str(get_data_path() / "image_desc_cache.json")
+        self.cache_file = cache_file
+        self._cache: dict = {}
+        self._load()
+
+    def _load(self):
+        if os.path.exists(self.cache_file):
+            try:
+                with open(self.cache_file, "r", encoding="utf-8") as f:
+                    self._cache = json.load(f)
+            except (json.JSONDecodeError, IOError):
+                self._cache = {}
+
+    def _save(self):
+        os.makedirs(os.path.dirname(self.cache_file), exist_ok=True)
+        with open(self.cache_file, "w", encoding="utf-8") as f:
+            json.dump(self._cache, f, ensure_ascii=False, indent=2)
+
+    def get(self, md5: str) -> Optional[str]:
+        entry = self._cache.get(md5)
+        if entry:
+            entry["count"] += 1
+            entry["last_seen"] = int(time.time())
+            self._save()
+            return entry["description"]
+        return None
+
+    def set(self, md5: str, description: str):
+        self._cache[md5] = {
+            "description": description,
+            "count": 1,
+            "last_seen": int(time.time())
+        }
+        self._save()
+
+
 class MessageProcessor:
     """Core message processor, responsible for handling all message sending and receiving logic"""
 
@@ -123,6 +176,9 @@ class MessageProcessor:
         self.session_locks: dict[str, asyncio.Lock] = {}
 
         self.session_buffer = SessionBufferManager(max_count=self.max_buffer_messages)
+
+        # image description cache
+        self.image_desc_cache = ImageDescCache()
 
         logger.info("MessageProcessor initialized")
 
@@ -183,13 +239,37 @@ class MessageProcessor:
                 else:
                     message_str += f"[At {ele.pid}]"
             elif isinstance(ele, Image):
-                image_base64 = await ele.to_base64()
-                img_desc = await self.llm_api.desc_img(image_base64, is_base64=True)
+                try:
+                    md5 = await ele.hash_image()
+                    cached_desc = self.image_desc_cache.get(md5)
+                except (ValueError, Exception) as e:
+                    logger.warning(f"Failed to hash image: {e}")
+                    md5 = None
+                    cached_desc = None
+                if cached_desc:
+                    img_desc = cached_desc
+                else:
+                    image_base64 = await ele.to_base64()
+                    img_desc = await self.llm_api.desc_img(image_base64, is_base64=True)
+                    if md5:
+                        self.image_desc_cache.set(md5, img_desc)
                 ele.caption = img_desc
                 message_str += f"[Image {img_desc}]"
             elif isinstance(ele, Sticker):
-                sticker_base64 = await ele.to_base64()
-                sticker_desc = await self.llm_api.desc_img(sticker_base64, is_base64=True)
+                try:
+                    md5 = await ele.hash_image()
+                    cached_desc = self.image_desc_cache.get(md5)
+                except (ValueError, Exception) as e:
+                    logger.warning(f"Failed to hash sticker: {e}")
+                    md5 = None
+                    cached_desc = None
+                if cached_desc:
+                    sticker_desc = cached_desc
+                else:
+                    sticker_base64 = await ele.to_base64()
+                    sticker_desc = await self.llm_api.desc_img(sticker_base64, is_base64=True)
+                    if md5:
+                        self.image_desc_cache.set(md5, sticker_desc)
                 ele.caption = sticker_desc
                 message_str += f"[Sticker {sticker_desc}]"
             elif isinstance(ele, Reply):
@@ -272,27 +352,21 @@ class MessageProcessor:
         logger.info(event.get_log_info())
 
         # decorating event info
-        logger.debug(f"[MessageProcessor] Step 1: Processing IM message event...")
 
         sid = event.session.sid
 
         event.session.session_description = self.memory_manager.get_session_info(sid).session_description
 
         # EventType.ON_IM_MESSAGE
-        logger.debug(f"[MessageProcessor] Step 2: Executing ON_IM_MESSAGE handlers...")
         im_handlers = event_handler_reg.get_handlers(event_type=EventType.ON_IM_MESSAGE)
         for handler in im_handlers:
-            logger.debug(f"[MessageProcessor]   -> Executing handler: {handler.desc or handler.handler.__name__}")
             await handler.exec_handler(event)
             if event.is_stopped:
-                logger.debug(f"[MessageProcessor] Event stopped by handler")
                 return
         if event.process_strategy == "discard":
-            logger.debug(f"[MessageProcessor] Message discarded by strategy")
             return
 
         if event.process_strategy == "trigger":
-            logger.debug(f"[MessageProcessor] Step 3: Strategy=trigger, creating batch message...")
             batch_msg = KiraMessageBatchEvent(
                 message_types=event.message_types,
                 timestamp=int(time.time()),
@@ -304,21 +378,17 @@ class MessageProcessor:
             return
 
         if event.process_strategy == "buffer":
-            logger.debug(f"[MessageProcessor] Step 3: Strategy=buffer, adding message to session buffer...")
             buffer = self.session_buffer.get_buffer(sid)
             async with buffer.lock:
                 buffer.add(event)
 
             # EventType.ON_MESSAGE_BUFFERED
-            logger.debug(f"[MessageProcessor] Executing ON_MESSAGE_BUFFERED handlers...")
             im_handlers = event_handler_reg.get_handlers(event_type=EventType.ON_MESSAGE_BUFFERED)
             for handler in im_handlers:
                 await handler.exec_handler(event.session.sid)
-            logger.debug(f"[MessageProcessor] Message buffered, current buffer length: {buffer.get_length()}")
             return
 
         if event.process_strategy == "flush":
-            logger.debug(f"[MessageProcessor] Step 3: Strategy=flush, flushing session buffer...")
             flushed = await self.flush_session_messages(sid, extra_event=event)
             if not flushed:
                 logger.warning(f"No pending messages to flush for session {sid}")
@@ -327,38 +397,29 @@ class MessageProcessor:
     async def handle_im_batch_message(self, event: KiraMessageBatchEvent):
         # Start processing
         sid = event.session.sid
-        logger.debug(f"[MessageProcessor] === handle_im_batch_message START ===")
-        logger.debug(f"[MessageProcessor] Session ID: {sid}")
 
-        logger.debug(f"[MessageProcessor] Step 1: Converting messages to text format...")
         for i, message in enumerate(event.messages):
             # TODO Add support for multimodal image/document comprehension
             message_str = await self.message_format_to_text(message.chain)
             message.message_str = message_str
-            logger.debug(f"[MessageProcessor]   -> Message {i+1}: {message_str[:100]}{'...' if len(message_str) > 100 else ''}")
 
         # EventType.ON_IM_BATCH_MESSAGE
-        logger.debug(f"[MessageProcessor] Step 2: Executing ON_IM_BATCH_MESSAGE handlers...")
         im_batch_handlers = event_handler_reg.get_handlers(event_type=EventType.ON_IM_BATCH_MESSAGE)
         for handler in im_batch_handlers:
-            logger.debug(f"[MessageProcessor]   -> Executing handler: {handler.desc or handler.handler.__name__}")
             await handler.exec_handler(event)
             if event.is_stopped:
                 logger.info("Event stopped")
                 return
 
         # Get existing session
-        logger.debug(f"[MessageProcessor] Step 3: Getting session info and chat history...")
         session_list = self.get_session_list_prompt()
 
         # Set session title
         if not self.memory_manager.get_session_info(sid).session_title:
             self.memory_manager.update_session_info(sid, event.session.session_title)
         session_title = self.memory_manager.get_session_info(sid).session_title
-        logger.debug(f"[MessageProcessor]   -> Session title: {session_title}")
 
         # Build chat environment
-        logger.debug(f"[MessageProcessor] Step 4: Building chat environment...")
         chat_env = {
             "platform": event.adapter.platform,
             "adapter": event.adapter.name,
@@ -368,42 +429,32 @@ class MessageProcessor:
             "session_description": event.session.session_description,
             "session_list": session_list
         }
-        logger.debug(f"[MessageProcessor]   -> Platform: {chat_env['platform']}, Chat type: {chat_env['chat_type']}")
 
         # Get chat history memory
-        logger.debug(f"[MessageProcessor] Step 5: Fetching chat history memory...")
         session_memory = self.memory_manager.fetch_memory(sid)
-        logger.debug(f"[MessageProcessor]   -> Memory entries: {len(session_memory)}")
 
         # Generate agent prompt
-        logger.debug(f"[MessageProcessor] Step 6: Generating agent prompt...")
         agent_prompt_list = self.prompt_manager.get_agent_prompt(chat_env)
 
         # Get default LLM model client
-        logger.debug(f"[MessageProcessor] Step 7: Getting default LLM model...")
         llm_model = self.provider_mgr.get_default_llm()
         if not llm_model:
             llm_logger.error(f"Default LLM model not set, please set it in Configuration")
             return
-        logger.debug(f"[MessageProcessor]   -> LLM Model: {llm_model.model.model_id} (Provider: {llm_model.model.provider_name})")
 
         request = LLMRequest(messages=session_memory[:], tools=self.llm_api.tools_definitions, tool_funcs=self.llm_api.tools_functions, tool_set=ToolSet())
         request.system_prompt.extend(agent_prompt_list)
 
         # Add received im messages
-        logger.debug(f"[MessageProcessor] Step 8: Building LLM request with user messages...")
         for i, message in enumerate(event.messages):
             request.user_prompt.append(Prompt(message.message_str, name="message", source="system"))
 
         # Build tag set
-        logger.debug(f"[MessageProcessor] Step 9: Building tag set...")
         tag_set = TagSet()
 
         # EventType.ON_LLM_REQUEST
-        logger.debug(f"[MessageProcessor] Step 10: Executing ON_LLM_REQUEST handlers...")
         llm_handlers = event_handler_reg.get_handlers(event_type=EventType.ON_LLM_REQUEST)
         for handler in llm_handlers:
-            logger.debug(f"[MessageProcessor]   -> Executing handler: {handler.desc or handler.handler.__name__}")
             await handler.exec_handler(event, request, tag_set)
             if event.is_stopped:
                 logger.info("Event stopped while llm request stage")
@@ -413,7 +464,6 @@ class MessageProcessor:
         tag_set.register(*tag_registry.get_all())
 
         # Assemble messages
-        logger.debug(f"[MessageProcessor] Step 11: Assembling prompt messages...")
         for sp in request.system_prompt:
             if sp.name == "format":
                 sp.content = sp.content.replace("<|message_types|>", tag_set.to_prompt())
@@ -439,7 +489,6 @@ class MessageProcessor:
             max_tool_loop = 2
 
         max_agent_steps = max_tool_loop + 1
-        logger.debug(f"[MessageProcessor] Step 12: Creating AgentExecutor (max_steps={max_agent_steps})...")
 
         agent_executor = AgentExecutor(self.llm_api, request.tool_set)
         agent_ctx = AgentExecutionContext(
@@ -453,7 +502,6 @@ class MessageProcessor:
             text = resp.text_response
             session_lock = self.get_session_lock(sid)
             async with session_lock:
-                logger.debug(f"[MessageProcessor] Step 13: Parsing and sending LLM text response...")
                 message_results = await self.send_xml_messages(event, text.strip(), tag_set)
                 if message_results is None:
                     return
@@ -477,7 +525,6 @@ class MessageProcessor:
 
         # Iter agent executor to get LLMResponse
         # TODO use llm_semaphore to restrict concurrent LLM requests
-        logger.debug(f"[MessageProcessor] Step 14: Starting Agent execution loop...")
         async for step in agent_executor.run(agent_ctx, max_steps=max_agent_steps):
             llm_resp = step.llm_response
             if not llm_resp:
@@ -492,9 +539,7 @@ class MessageProcessor:
             # Process tool calls if existed
 
         # Save new memory
-        logger.debug(f"[MessageProcessor] Step 15: Saving new memory to session...")
         self.memory_manager.update_memory(sid, new_memory.memory_list)
-        logger.debug(f"[MessageProcessor] === handle_im_batch_message END ===")
 
     async def handle_cmt_message(self, msg: KiraCommentEvent):
         """process comment message"""

@@ -6,6 +6,8 @@ from core.logging_manager import get_logger
 from webui.models import (
     ModelCreateRequest,
     ModelUpdateRequest,
+    ModelTestRequest,
+    ModelTestResponse,
     ProviderBase,
     ProviderResponse,
 )
@@ -105,6 +107,14 @@ class ProvidersRoutes(Routes):
                 methods=["DELETE"],
                 endpoint=self.delete_provider,
                 status_code=status.HTTP_204_NO_CONTENT,
+                tags=["providers"],
+                dependencies=[Depends(require_auth)],
+            ),
+            RouteDefinition(
+                path="/api/providers/{provider_id}/models/test",
+                methods=["POST"],
+                endpoint=self.test_model,
+                response_model=ModelTestResponse,
                 tags=["providers"],
                 dependencies=[Depends(require_auth)],
             ),
@@ -363,3 +373,151 @@ class ProvidersRoutes(Routes):
             raise HTTPException(status_code=404, detail="Provider not found")
         self._providers.pop(provider_id, None)
         return None
+
+    async def test_model(self, provider_id: str, payload: ModelTestRequest):
+        import time
+        import asyncio
+        from openai import AsyncOpenAI, APIStatusError, APITimeoutError, APIConnectionError
+
+        if not self.lifecycle or not self.lifecycle.provider_manager:
+            raise HTTPException(status_code=500, detail="Provider manager not available")
+
+        provider_info = self.lifecycle.provider_manager.get_provider_info(provider_id)
+        if not provider_info:
+            raise HTTPException(status_code=404, detail="Provider not found")
+
+        model_info = self.lifecycle.provider_manager.get_model_info(provider_id, payload.model_id)
+        if not model_info:
+            raise HTTPException(status_code=404, detail="Model not found")
+
+        provider_config = provider_info.provider_config
+        api_key = provider_config.get("api_key", "")
+        base_url = provider_config.get("base_url", "")
+
+        result = ModelTestResponse(success=False)
+
+        try:
+            client = AsyncOpenAI(
+                api_key=api_key,
+                base_url=base_url,
+                timeout=30.0
+            )
+
+            start_time = time.perf_counter()
+
+            if payload.model_type == "llm":
+                response = await client.chat.completions.create(
+                    model=payload.model_id,
+                    messages=[{"role": "user", "content": "Hello, this is a test message. Please respond briefly."}],
+                    max_tokens=50
+                )
+                end_time = time.perf_counter()
+                result.response_time_ms = round((end_time - start_time) * 1000, 2)
+                result.status_code = 200
+                
+                if response.choices and len(response.choices) > 0 and response.choices[0].message.content:
+                    result.success = True
+                    result.response_data = {
+                        "model": response.model,
+                        "content": response.choices[0].message.content[:200] if response.choices[0].message.content else "",
+                        "usage": {
+                            "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
+                            "completion_tokens": response.usage.completion_tokens if response.usage else 0,
+                            "total_tokens": response.usage.total_tokens if response.usage else 0
+                        }
+                    }
+                else:
+                    result.success = False
+                    result.error_type = "empty_response"
+                    result.error_message = "The model returned an empty response"
+                    result.suggestion = "The model accepted the request but returned no content. Please check if the model is working properly."
+            elif payload.model_type == "embedding":
+                response = await client.embeddings.create(
+                    model=payload.model_id,
+                    input=["test"]
+                )
+                end_time = time.perf_counter()
+                result.response_time_ms = round((end_time - start_time) * 1000, 2)
+                result.status_code = 200
+                
+                if response.data and len(response.data) > 0 and response.data[0].embedding:
+                    result.success = True
+                    result.response_data = {
+                        "model": response.model,
+                        "embedding_dimension": len(response.data[0].embedding),
+                        "data_count": len(response.data)
+                    }
+                else:
+                    result.success = False
+                    result.error_type = "empty_response"
+                    result.error_message = "The embedding model returned an empty response"
+                    result.suggestion = "The model accepted the request but returned no embedding data. Please check if the model is working properly."
+            elif payload.model_type == "image":
+                response = await client.images.generate(
+                    model=payload.model_id,
+                    prompt="A simple test image",
+                    n=1,
+                    size="1024x1024"
+                )
+                end_time = time.perf_counter()
+                result.response_time_ms = round((end_time - start_time) * 1000, 2)
+                result.status_code = 200
+                
+                if response.data and len(response.data) > 0 and response.data[0].url:
+                    result.success = True
+                    result.response_data = {
+                        "model": payload.model_id,
+                        "image_url": response.data[0].url[:100] if response.data[0].url else ""
+                    }
+                else:
+                    result.success = False
+                    result.error_type = "empty_response"
+                    result.error_message = "The image model returned an empty response"
+                    result.suggestion = "The model accepted the request but returned no image URL. Please check if the model is working properly."
+            else:
+                result.success = False
+                result.error_message = f"Testing for model type '{payload.model_type}' is not yet supported"
+                result.error_type = "unsupported_type"
+                result.suggestion = "Currently only LLM, Embedding, and Image models can be tested"
+
+        except APIStatusError as e:
+            end_time = time.perf_counter()
+            result.response_time_ms = round((end_time - start_time) * 1000, 2)
+            result.status_code = e.status_code if hasattr(e, 'status_code') else 500
+            result.error_type = "api_error"
+            result.error_message = str(e.message) if hasattr(e, 'message') else str(e)
+
+            if result.status_code == 401:
+                result.suggestion = "Please check if your API key is correct and valid"
+            elif result.status_code == 403:
+                result.suggestion = "Access denied. Please verify your API key permissions"
+            elif result.status_code == 404:
+                result.suggestion = "Model not found. Please check if the model ID is correct"
+            elif result.status_code == 429:
+                result.suggestion = "Rate limit exceeded. Please wait and try again later"
+            elif result.status_code == 500:
+                result.suggestion = "Server error. Please try again later or check the provider status"
+            else:
+                result.suggestion = "Please check your provider configuration and try again"
+
+        except APITimeoutError as e:
+            end_time = time.perf_counter()
+            result.response_time_ms = round((end_time - start_time) * 1000, 2)
+            result.status_code = 408
+            result.error_type = "timeout"
+            result.error_message = "Request timed out"
+            result.suggestion = "The request took too long. Please check your network connection or try a different base URL"
+
+        except APIConnectionError as e:
+            result.status_code = 503
+            result.error_type = "connection_error"
+            result.error_message = str(e)
+            result.suggestion = "Could not connect to the API. Please check if the base URL is correct and accessible"
+
+        except Exception as e:
+            result.status_code = 500
+            result.error_type = "unknown_error"
+            result.error_message = str(e)
+            result.suggestion = "An unexpected error occurred. Please check the logs for more details"
+
+        return result

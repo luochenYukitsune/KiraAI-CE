@@ -184,6 +184,7 @@ async function loadPageData(pageName) {
                 break;
             case 'settings':
                 await loadSettingsData();
+                initBackgroundMusic();
                 break;
         }
     } catch (error) {

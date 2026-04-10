@@ -69,7 +69,8 @@ def build_sticker_tag(sticker_dict: dict) -> Type[BaseTag]:
                 sticker_path = sticker_dict[sticker_id].get("path")
                 sticker_desc = sticker_dict[sticker_id].get("desc")
                 sticker_bs64 = await image_to_base64(f"{get_data_path()}/sticker/{sticker_path}")
-                sticker_obj = Sticker(sticker_id, sticker=sticker_bs64, caption=sticker_desc)
+                sticker_obj = Sticker(sticker_id, sticker=sticker_bs64)
+                sticker_obj.caption = sticker_desc or ""
                 if sticker_desc:
                     md5 = await sticker_obj.hash_image()
                     cache = ImageDescCache()

@@ -580,3 +580,442 @@ function updateEditorStatus(hasChanges = false) {
 
     statusElement.textContent = statusText;
 }
+
+// ---------------------------------------------------------------------------
+// Background Music Player
+// ---------------------------------------------------------------------------
+
+const BackgroundMusicPlayer = {
+    audio: null,
+    _initialized: false,
+    state: {
+        enabled: false,
+        volume: 0.5,
+        url: '',
+        loop: true,
+        isPlaying: false
+    },
+
+    init() {
+        if (this.audio) {
+            this.audio.pause();
+            this.audio.src = '';
+        }
+        
+        this.audio = new Audio();
+        this.audio.volume = this.state.volume;
+        this.audio.loop = this.state.loop;
+        
+        this.audio.addEventListener('ended', () => {
+            if (!this.state.loop) {
+                this.state.isPlaying = false;
+                this.updatePlayButton();
+                this.updateStatus();
+            }
+        });
+
+        this.audio.addEventListener('error', (e) => {
+            console.error('Audio error:', e);
+            this.state.isPlaying = false;
+            this.updatePlayButton();
+            this.updateStatus();
+            showNotification(
+                getTranslation('settings.background_music_load_error', 'Failed to load audio file'),
+                'error'
+            );
+        });
+
+        this.audio.addEventListener('canplaythrough', () => {
+            if (this.state.enabled && this.state.url && !this.state.isPlaying) {
+                this.play();
+            }
+        });
+
+        this.loadSettings();
+        this.bindEvents();
+    },
+
+    async loadSettings() {
+        try {
+            const response = await apiCall('/api/settings/background-music');
+            if (response.ok) {
+                const data = await response.json();
+                this.state.enabled = data.enabled || false;
+                this.state.volume = data.volume ?? 0.5;
+                this.state.url = data.url || '';
+                this.state.loop = data.loop ?? true;
+                
+                if (this.audio) {
+                    this.audio.volume = this.state.volume;
+                    this.audio.loop = this.state.loop;
+                    
+                    if (this.state.url) {
+                        this.audio.src = this.state.url;
+                    }
+                }
+                
+                this.updateUI();
+            }
+        } catch (error) {
+            console.error('Error loading background music settings:', error);
+        }
+    },
+
+    async saveSettings() {
+        try {
+            await apiCall('/api/settings/background-music', {
+                method: 'PUT',
+                body: JSON.stringify({
+                    enabled: this.state.enabled,
+                    volume: this.state.volume,
+                    url: this.state.url,
+                    loop: this.state.loop
+                })
+            });
+        } catch (error) {
+            console.error('Error saving background music settings:', error);
+        }
+    },
+
+    bindEvents() {
+        const toggleBtn = document.getElementById('bg-music-toggle');
+        const controlsDiv = document.getElementById('bg-music-controls');
+        const volumeSlider = document.getElementById('bg-music-volume');
+        const urlInput = document.getElementById('bg-music-url');
+        const applyUrlBtn = document.getElementById('bg-music-apply-url');
+        const loopToggle = document.getElementById('bg-music-loop-toggle');
+        const playBtn = document.getElementById('bg-music-play');
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                this.state.enabled = !this.state.enabled;
+                this.updateToggle(toggleBtn, this.state.enabled);
+                
+                if (controlsDiv) {
+                    controlsDiv.classList.toggle('hidden', !this.state.enabled);
+                }
+                
+                if (this.state.enabled && this.state.url) {
+                    this.play();
+                } else {
+                    this.stop();
+                }
+                
+                this.saveSettings();
+            });
+        }
+
+        if (volumeSlider) {
+            volumeSlider.addEventListener('input', (e) => {
+                const value = parseInt(e.target.value);
+                this.state.volume = value / 100;
+                if (this.audio) {
+                    this.audio.volume = this.state.volume;
+                }
+                
+                const volumeValue = document.getElementById('bg-music-volume-value');
+                if (volumeValue) {
+                    volumeValue.textContent = `${value}%`;
+                }
+            });
+
+            volumeSlider.addEventListener('change', () => {
+                this.saveSettings();
+            });
+        }
+
+        if (applyUrlBtn && urlInput) {
+            applyUrlBtn.addEventListener('click', () => {
+                const url = urlInput.value.trim();
+                if (url) {
+                    this.setUrl(url);
+                } else {
+                    showNotification(
+                        getTranslation('settings.background_music_url_required', 'Please enter a valid URL'),
+                        'warning'
+                    );
+                }
+            });
+        }
+
+        if (loopToggle) {
+            loopToggle.addEventListener('click', () => {
+                this.state.loop = !this.state.loop;
+                if (this.audio) {
+                    this.audio.loop = this.state.loop;
+                }
+                this.updateToggle(loopToggle, this.state.loop);
+                this.saveSettings();
+            });
+        }
+
+        if (playBtn) {
+            playBtn.addEventListener('click', () => {
+                if (this.state.isPlaying) {
+                    this.pause();
+                } else {
+                    this.play();
+                }
+            });
+        }
+
+        const fileInput = document.getElementById('bg-music-file-input');
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    this.uploadFile(file);
+                }
+            });
+        }
+
+        const fileSelect = document.getElementById('bg-music-file-select');
+        if (fileSelect) {
+            fileSelect.addEventListener('change', (e) => {
+                const selectedUrl = e.target.value;
+                if (selectedUrl) {
+                    this.setUrl(selectedUrl);
+                }
+            });
+        }
+    },
+
+    async uploadFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            showNotification(
+                getTranslation('settings.background_music_uploading', 'Uploading file...'),
+                'info'
+            );
+
+            const response = await apiCall('/api/settings/background-music/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                showNotification(
+                    getTranslation('settings.background_music_upload_success', 'File uploaded successfully'),
+                    'success'
+                );
+                this.setUrl(result.url);
+                await this.loadLocalFiles();
+            } else {
+                throw new Error(result.detail || 'Upload failed');
+            }
+        } catch (error) {
+            console.error('Error uploading file:', error);
+            showNotification(
+                getTranslation('settings.background_music_upload_error', 'Failed to upload file'),
+                'error'
+            );
+        }
+    },
+
+    async loadLocalFiles() {
+        const fileSelect = document.getElementById('bg-music-file-select');
+        if (!fileSelect) return;
+
+        try {
+            const response = await apiCall('/api/settings/background-music/files');
+            const data = await response.json();
+            
+            fileSelect.innerHTML = `<option value="" data-i18n="settings.background_music_select_file">${getTranslation('settings.background_music_select_file', 'Select a file...')}</option>`;
+            
+            data.files.forEach(file => {
+                const option = document.createElement('option');
+                option.value = file.url;
+                option.textContent = `${file.filename} (${this.formatFileSize(file.size)})`;
+                if (this.state.url && this.state.url.endsWith(file.filename)) {
+                    option.selected = true;
+                }
+                fileSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading local files:', error);
+        }
+    },
+
+    formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    },
+
+    setUrl(url) {
+        this.state.url = url;
+        if (this.audio) {
+            this.audio.src = url;
+            if (this.state.enabled) {
+                this.audio.load();
+            }
+        }
+        this.updateSource();
+        this.saveSettings();
+        
+        showNotification(
+            getTranslation('settings.background_music_url_applied', 'Music URL applied'),
+            'success'
+        );
+    },
+
+    play() {
+        if (!this.state.url) {
+            showNotification(
+                getTranslation('settings.background_music_no_url', 'Please set a music URL first'),
+                'warning'
+            );
+            return;
+        }
+
+        if (!this.audio) {
+            return;
+        }
+
+        this.audio.play().then(() => {
+            this.state.isPlaying = true;
+            this.updatePlayButton();
+            this.updateStatus();
+        }).catch((error) => {
+            console.error('Error playing audio:', error);
+            showNotification(
+                getTranslation('settings.background_music_play_error', 'Failed to play audio'),
+                'error'
+            );
+        });
+    },
+
+    pause() {
+        if (this.audio) {
+            this.audio.pause();
+        }
+        this.state.isPlaying = false;
+        this.updatePlayButton();
+        this.updateStatus();
+    },
+
+    stop() {
+        if (this.audio) {
+            this.audio.pause();
+            this.audio.currentTime = 0;
+        }
+        this.state.isPlaying = false;
+        this.updatePlayButton();
+        this.updateStatus();
+    },
+
+    updateToggle(button, isOn) {
+        const span = button.querySelector('span');
+        if (isOn) {
+            button.classList.remove('bg-gray-200', 'dark:bg-gray-600');
+            button.classList.add('bg-blue-600');
+            button.setAttribute('aria-checked', 'true');
+            if (span) {
+                span.classList.remove('translate-x-0');
+                span.classList.add('translate-x-5');
+            }
+        } else {
+            button.classList.remove('bg-blue-600');
+            button.classList.add('bg-gray-200', 'dark:bg-gray-600');
+            button.setAttribute('aria-checked', 'false');
+            if (span) {
+                span.classList.remove('translate-x-5');
+                span.classList.add('translate-x-0');
+            }
+        }
+    },
+
+    updatePlayButton() {
+        const playBtn = document.getElementById('bg-music-play');
+        const playIcon = document.getElementById('bg-music-play-icon');
+        
+        if (playIcon) {
+            if (this.state.isPlaying) {
+                playIcon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                `;
+            } else {
+                playIcon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                `;
+            }
+        }
+    },
+
+    updateStatus() {
+        const statusEl = document.getElementById('bg-music-status');
+        if (statusEl) {
+            if (this.state.isPlaying) {
+                statusEl.textContent = getTranslation('settings.background_music_playing', 'Playing');
+            } else {
+                statusEl.textContent = getTranslation('settings.background_music_stopped', 'Stopped');
+            }
+        }
+    },
+
+    updateSource() {
+        const sourceEl = document.getElementById('bg-music-source');
+        if (sourceEl) {
+            if (this.state.url) {
+                try {
+                    const url = new URL(this.state.url);
+                    const filename = url.pathname.split('/').pop() || 'Audio';
+                    sourceEl.textContent = filename;
+                } catch {
+                    sourceEl.textContent = this.state.url.substring(0, 30) + '...';
+                }
+            } else {
+                sourceEl.textContent = getTranslation('settings.background_music_no_source', 'No music source');
+            }
+        }
+        
+        const urlInput = document.getElementById('bg-music-url');
+        if (urlInput && this.state.url) {
+            urlInput.value = this.state.url;
+        }
+    },
+
+    updateUI() {
+        const toggleBtn = document.getElementById('bg-music-toggle');
+        const controlsDiv = document.getElementById('bg-music-controls');
+        const volumeSlider = document.getElementById('bg-music-volume');
+        const volumeValue = document.getElementById('bg-music-volume-value');
+        const loopToggle = document.getElementById('bg-music-loop-toggle');
+
+        if (toggleBtn) {
+            this.updateToggle(toggleBtn, this.state.enabled);
+        }
+
+        if (controlsDiv) {
+            controlsDiv.classList.toggle('hidden', !this.state.enabled);
+        }
+
+        if (volumeSlider) {
+            volumeSlider.value = Math.round(this.state.volume * 100);
+        }
+
+        if (volumeValue) {
+            volumeValue.textContent = `${Math.round(this.state.volume * 100)}%`;
+        }
+
+        if (loopToggle) {
+            this.updateToggle(loopToggle, this.state.loop);
+        }
+
+        this.updateSource();
+        this.updateStatus();
+        this.loadLocalFiles();
+    }
+};
+
+function initBackgroundMusic() {
+    if (!BackgroundMusicPlayer._initialized) {
+        BackgroundMusicPlayer.init();
+        BackgroundMusicPlayer._initialized = true;
+    }
+}

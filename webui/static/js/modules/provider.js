@@ -643,6 +643,17 @@ function renderModelGroupModels(modelConfig) {
             const actions = document.createElement('div');
             actions.className = 'flex items-center space-x-2';
 
+            const testButton = document.createElement('button');
+            testButton.className = 'p-1 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 transition-colors';
+            testButton.title = getTranslation('provider.test_model', 'Test Model');
+            testButton.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+            testButton.onclick = (e) => {
+                e.stopPropagation();
+                const providerId = AppState.selectedProviderId;
+                if (!providerId) return;
+                testModel(providerId, type, modelId);
+            };
+
             const settingsButton = document.createElement('button');
             settingsButton.className = 'p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors';
             settingsButton.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>';
@@ -672,6 +683,7 @@ function renderModelGroupModels(modelConfig) {
                 deleteModel(providerId, type, modelId);
             };
 
+            actions.appendChild(testButton);
             actions.appendChild(settingsButton);
             actions.appendChild(deleteButton);
 
@@ -973,3 +985,236 @@ window.deleteModel = deleteModel;
 window.openModelModal = openModelModal;
 window.closeModelModal = closeModelModal;
 window.saveModel = saveModel;
+window.testModel = testModel;
+window.closeModelTestModal = closeModelTestModal;
+
+// ---------------------------------------------------------------------------
+// Model Test functionality
+// ---------------------------------------------------------------------------
+
+const modelTestState = {
+    providerId: null,
+    modelType: null,
+    modelId: null,
+    status: 'idle', // idle, testing, success, error
+    result: null
+};
+
+async function testModel(providerId, modelType, modelId) {
+    modelTestState.providerId = providerId;
+    modelTestState.modelType = modelType;
+    modelTestState.modelId = modelId;
+    modelTestState.status = 'testing';
+    modelTestState.result = null;
+
+    showModelTestModal();
+
+    try {
+        const response = await apiCall(`/api/providers/${providerId}/models/test`, {
+            method: 'POST',
+            body: JSON.stringify({
+                model_type: modelType,
+                model_id: modelId
+            })
+        });
+
+        const result = await response.json();
+        modelTestState.result = result;
+        modelTestState.status = result.success ? 'success' : 'error';
+        updateModelTestUI();
+    } catch (error) {
+        console.error('Error testing model:', error);
+        modelTestState.status = 'error';
+        modelTestState.result = {
+            success: false,
+            error_message: error.message || 'Unknown error',
+            error_type: 'network_error',
+            suggestion: getTranslation('provider.test_network_error', 'Could not connect to the server. Please check your network connection.')
+        };
+        updateModelTestUI();
+    }
+}
+
+function showModelTestModal() {
+    Modal.show('model-test-modal', closeModelTestModal);
+    updateModelTestUI();
+}
+
+function closeModelTestModal() {
+    Modal.hide('model-test-modal');
+    modelTestState.status = 'idle';
+    modelTestState.result = null;
+}
+
+function updateModelTestUI() {
+    const statusContainer = document.getElementById('model-test-status');
+    const resultContainer = document.getElementById('model-test-result');
+    const modelInfoEl = document.getElementById('model-test-model-info');
+
+    if (!statusContainer || !resultContainer) return;
+
+    const modelTypeDisplay = {
+        'llm': 'LLM',
+        'tts': 'TTS',
+        'stt': 'STT',
+        'image': 'Image',
+        'video': 'Video',
+        'embedding': 'Embedding',
+        'rerank': 'Rerank'
+    };
+
+    if (modelInfoEl) {
+        modelInfoEl.textContent = `${modelTestState.modelId} (${modelTypeDisplay[modelTestState.modelType] || modelTestState.modelType})`;
+    }
+
+    if (modelTestState.status === 'testing') {
+        statusContainer.innerHTML = `
+            <div class="flex items-center justify-center py-4">
+                <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="ml-3 text-gray-600 dark:text-gray-300" data-i18n="provider.test_testing">Testing model...</span>
+            </div>
+        `;
+        resultContainer.innerHTML = '';
+    } else if (modelTestState.status === 'success') {
+        const result = modelTestState.result;
+        statusContainer.innerHTML = `
+            <div class="flex items-center py-3 px-4 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="ml-2 font-medium text-green-800 dark:text-green-200" data-i18n="provider.test_success">Test Successful</span>
+            </div>
+        `;
+
+        let responseDetails = '';
+        if (result.response_data) {
+            if (result.response_data.content !== undefined) {
+                responseDetails = `
+                    <div class="mt-3">
+                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" data-i18n="provider.test_response">Response:</p>
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm text-gray-800 dark:text-gray-200 max-h-32 overflow-y-auto">
+                            ${escapeHtml(result.response_data.content || '(empty response)')}
+                        </div>
+                    </div>
+                `;
+            } else if (result.response_data.embedding_dimension !== undefined) {
+                responseDetails = `
+                    <div class="mt-3 grid grid-cols-2 gap-3">
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 dark:text-gray-400" data-i18n="provider.test_embedding_dim">Embedding Dimension</p>
+                            <p class="text-lg font-semibold text-gray-800 dark:text-gray-200">${result.response_data.embedding_dimension}</p>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                            <p class="text-xs text-gray-500 dark:text-gray-400" data-i18n="provider.test_data_count">Data Count</p>
+                            <p class="text-lg font-semibold text-gray-800 dark:text-gray-200">${result.response_data.data_count}</p>
+                        </div>
+                    </div>
+                `;
+            } else if (result.response_data.image_url !== undefined) {
+                responseDetails = `
+                    <div class="mt-3">
+                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" data-i18n="provider.test_image_url">Image URL:</p>
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm text-gray-800 dark:text-gray-200 break-all">
+                            ${escapeHtml(result.response_data.image_url || '(no url)')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (result.response_data.usage) {
+                responseDetails += `
+                    <div class="mt-3 grid grid-cols-3 gap-2">
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center">
+                            <p class="text-xs text-gray-500 dark:text-gray-400" data-i18n="provider.test_prompt_tokens">Prompt</p>
+                            <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">${result.response_data.usage.prompt_tokens}</p>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center">
+                            <p class="text-xs text-gray-500 dark:text-gray-400" data-i18n="provider.test_completion_tokens">Completion</p>
+                            <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">${result.response_data.usage.completion_tokens}</p>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center">
+                            <p class="text-xs text-gray-500 dark:text-gray-400" data-i18n="provider.test_total_tokens">Total</p>
+                            <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">${result.response_data.usage.total_tokens}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        resultContainer.innerHTML = `
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1" data-i18n="provider.test_response_time">Response Time</p>
+                        <p class="text-xl font-bold text-gray-800 dark:text-gray-200">${result.response_time_ms} <span class="text-sm font-normal">ms</span></p>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1" data-i18n="provider.test_status_code">Status Code</p>
+                        <p class="text-xl font-bold text-green-600 dark:text-green-400">${result.status_code}</p>
+                    </div>
+                </div>
+                ${responseDetails}
+            </div>
+        `;
+
+        if (window.i18n) {
+            updateTranslations();
+        }
+    } else if (modelTestState.status === 'error') {
+        const result = modelTestState.result;
+        statusContainer.innerHTML = `
+            <div class="flex items-center py-3 px-4 bg-red-50 dark:bg-red-900/30 rounded-lg">
+                <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="ml-2 font-medium text-red-800 dark:text-red-200" data-i18n="provider.test_failed">Test Failed</span>
+            </div>
+        `;
+
+        resultContainer.innerHTML = `
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1" data-i18n="provider.test_response_time">Response Time</p>
+                        <p class="text-xl font-bold text-gray-800 dark:text-gray-200">${result.response_time_ms || 0} <span class="text-sm font-normal">ms</span></p>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1" data-i18n="provider.test_status_code">Status Code</p>
+                        <p class="text-xl font-bold text-red-600 dark:text-red-400">${result.status_code || 'N/A'}</p>
+                    </div>
+                </div>
+                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium text-red-800 dark:text-red-200">${escapeHtml(result.error_message || 'Unknown error')}</p>
+                            <p class="text-xs text-red-600 dark:text-red-400 mt-1">${getTranslation('provider.test_error_type', 'Error Type')}: ${result.error_type || 'unknown'}</p>
+                        </div>
+                    </div>
+                </div>
+                ${result.suggestion ? `
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium text-blue-800 dark:text-blue-200" data-i18n="provider.test_suggestion">Suggestion</p>
+                            <p class="text-sm text-blue-700 dark:text-blue-300 mt-1">${escapeHtml(result.suggestion)}</p>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+
+        if (window.i18n) {
+            updateTranslations();
+        }
+    }
+}

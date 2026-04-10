@@ -86,6 +86,20 @@ class SettingsResponse(SettingsRequest):
     updated_by: Optional[str] = None
 
 
+class BackgroundMusicSettings(BaseModel):
+    enabled: bool = False
+    volume: float = 0.5
+    url: str = ""
+    loop: bool = True
+
+
+class BackgroundMusicRequest(BaseModel):
+    enabled: Optional[bool] = None
+    volume: Optional[float] = None
+    url: Optional[str] = None
+    loop: Optional[bool] = None
+
+
 class TokenLoginRequest(BaseModel):
     access_token: str
 
@@ -145,3 +159,18 @@ class McpServerCreateRequest(BaseModel):
     name: str
     description: Optional[str] = None
     config: Any
+
+
+class ModelTestRequest(BaseModel):
+    model_type: str
+    model_id: str
+
+
+class ModelTestResponse(BaseModel):
+    success: bool
+    response_time_ms: float = 0
+    status_code: int = 0
+    error_message: str = ""
+    error_type: str = ""
+    suggestion: str = ""
+    response_data: Dict[str, Any] = Field(default_factory=dict)
